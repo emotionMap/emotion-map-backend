@@ -1,10 +1,10 @@
-package com.bh.emotion_app;
+package com.emotionmap;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class EmotionAppApplicationTests {
+class EmotionMapApplicationTests {
 
     @Test
     void contextLoads() {

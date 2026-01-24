@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: emotion_app
+  profiles:
+#    active: local
+    active: swagger
+
+mybatis:
+  type-aliases-package: com.emotionmap.business

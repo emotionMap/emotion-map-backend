@@ -1,13 +1,13 @@
-package com.bh.emotion_app;
+package com.emotionmap;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class EmotionAppApplication {
+public class EmotionMapApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(EmotionAppApplication.class, args);
+        SpringApplication.run(EmotionMapApplication.class, args);
     }
 
 }
