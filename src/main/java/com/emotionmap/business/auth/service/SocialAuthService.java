@@ -12,14 +12,17 @@ public class SocialAuthService {
 
     private final KakaoAuthClient kakaoAuthClient;
     private final NaverAuthClient naverAuthClient;
+    private final AppleAuthClient appleAuthClient;
 
     public SocialUserInfoVo getUserInfo(String provider, String accessToken) {
 
         switch (provider.toLowerCase()) {
-            case "kakao":
+            case "KAKAO":
                 return kakaoAuthClient.getUserInfo(accessToken);
-            case "naver":
+            case "NAVER":
                 return naverAuthClient.getUserInfo(accessToken);
+            case "APPLE":
+                return appleAuthClient.getUserInfo(accessToken);
             default:
                 throw new BusinessException(ErrorCode.SERVER_ERROR);
         }

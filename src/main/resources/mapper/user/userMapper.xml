@@ -24,7 +24,11 @@
                            status)
         VALUES (#{provider},
                 #{provider_user_id},
-                #{status});
+                #{status})
     </insert>
+
+    <delete id="dataClean" >
+        DELETE FROM users where 1=1
+    </delete>
 
 </mapper>

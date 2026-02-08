@@ -8,9 +8,11 @@ import org.springframework.http.HttpStatus;
 @AllArgsConstructor
 public enum ErrorCode {
 
-
     /*4XX*/
-    AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "AUTH_REQUIRED", "유효하지 않은 토큰입니다."),
+//    AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "AUTH_REQUIRED", "유효하지 않은 토큰입니다."),
+    KAKAO_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "KAKAO_AUTH_FAILED", "카카오 인증 실패입니다."),
+    NAVER_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "NAVER_AUTH_FAILED", "네이버 인증 실패입니다."),
+    APPLE_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "APPLE_AUTH_FAILED", "애플 인증 실패입니다."),
     NOT_FIND_USER_INFO(HttpStatus.NOT_ACCEPTABLE, "NOT_FIND_USER_INFO", "사용자 정보를 찾을 수 없습니다."),
     EXAMPLE0(HttpStatus.NOT_ACCEPTABLE, "NOT_FIND_USER_INFO", "이미 가입된 사용자입니다.")
 

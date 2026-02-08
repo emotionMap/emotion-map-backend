@@ -13,4 +13,6 @@ public interface UserMapper {
     );
 
     void insertUserInfo(UserVo user);
+
+    void dataClean();
 }

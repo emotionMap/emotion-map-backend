@@ -8,7 +8,4 @@ import lombok.Getter;
 public class SocialUserInfoVo {
 
     private String id;          // provider_user_id
-    private String email;       // optional
-    private String nickname;    // optional
-    private String profileImageUrl; // optional
 }

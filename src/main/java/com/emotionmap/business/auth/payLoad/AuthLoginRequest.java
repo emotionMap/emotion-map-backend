@@ -11,7 +11,7 @@ public class AuthLoginRequest {
     @Schema(
             description = "소셜 로그인 제공자",
             example = "KAKAO",
-            allowableValues = {"KAKAO", "NAVER"}
+            allowableValues = {"KAKAO", "NAVER", "APPLE"}
     )
     private String provider;
 
