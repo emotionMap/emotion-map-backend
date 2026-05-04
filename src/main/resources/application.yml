@@ -2,8 +2,18 @@ spring:
   application:
     name: emotion_app
   profiles:
-#    active: local
-    active: swagger
+    active: local
+
+logging:
+  level:
+    org.mybatis: debug
+    org.apache.ibatis: debug
+    jdbc.sqlonly: debug
+    jdbc.sqltiming: debug
 
 mybatis:
+  mapper-locations: classpath:/mapper/**/*.xml
   type-aliases-package: com.emotionmap.business
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true

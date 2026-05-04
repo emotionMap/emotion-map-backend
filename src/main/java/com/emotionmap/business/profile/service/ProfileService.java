@@ -1,7 +1,7 @@
 package com.emotionmap.business.profile.service;
 
 import com.emotionmap.business.auth.mapper.UserMapper;
-import com.emotionmap.business.auth.provider.JwtProvider;
+import com.emotionmap.business.jwt.provider.JwtProvider;
 import com.emotionmap.business.auth.vo.JWTToken;
 import com.emotionmap.business.auth.vo.UserVo;
 import com.emotionmap.business.profile.mapper.ProfilerMapper;

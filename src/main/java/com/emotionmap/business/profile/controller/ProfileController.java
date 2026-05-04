@@ -10,10 +10,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "profile", description = "프로필 설정 API")
+@Tag(name = "profile", description = "프로필 API")
 @RestController
+@RequestMapping("/profile")
 @RequiredArgsConstructor
 
 public class ProfileController {
@@ -21,11 +23,25 @@ public class ProfileController {
     private final ProfileService profileService;
 
     @Operation(summary = "회원가입(프로필 등록)")
-    @PostMapping("/profile/reg")
+    @PostMapping("/create")
     public ResponseEntity<ApiResponse<ProfileResponse>> login(@RequestBody ProfileRequest request) {
         ProfileResponse response =
                 profileService.reg(request);
 
         return ResponseEntity.ok(ApiResponse.of(response));
     }
+
+    // 프로필 조회
+
+    // @AuthenticationPrincipal
+//    @Operation(summary = "프로필 수정")
+//    @PutMapping("/update/{userId}")
+//    public ResponseEntity<ApiResponse<ProfileResponse>> login(@RequestBody ProfileRequest request) {
+//        ProfileResponse response =
+//                profileService.reg(request);
+//
+//        return ResponseEntity.ok(ApiResponse.of(response));
+//    }
+
+    // 나의 작성글
 }

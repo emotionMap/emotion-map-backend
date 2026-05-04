@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.emotionmap.business.posts.mapper.PostsMapper">
+
+    <!-- 게시글 리스트 조회 -->
+    <select id="getPosts" resultType="PostListResponse">
+        SELECT
+            p.id AS post_id,
+            p.user_id,
+            u.nickname,
+            u.profile_image_url,
+            p.location_id,
+            l.location_name,
+            p.content,
+            p.created_at,
+            CASE WHEN pl.user_id IS NULL THEN 'N' ELSE 'Y' END AS likeYN,
+            CASE WHEN p.user_id = #{userId} THEN TRUE ELSE FALSE END AS isMine,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) AS likeCount,
+            (SELECT COUNT(*) FROM posts WHERE parent_id = p.id) AS commentCount,
+            status
+        FROM posts p
+                 LEFT JOIN users u ON u.id = p.user_id
+                 LEFT JOIN locations l ON l.id = p.location_id
+                 LEFT JOIN post_likes pl ON pl.post_id = p.id AND pl.user_id = #{userId}
+        WHERE p.depth = 0
+        <if test="filterUserId != null">
+            AND p.user_id = #{filterUserId}
+        </if>
+        ORDER BY p.id DESC
+        LIMIT #{size}
+        OFFSET #{offset};
+    </select>
+    <!-- 게시글 리스트 사진 조회 -->
+    <select id="getPostsImage" resultType="Image">
+        SELECT
+            post_id,
+            image_url AS url,
+            sort_order
+        FROM post_images
+        WHERE post_id IN
+        <foreach collection="postIdList" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY sort_order ASC
+    </select>
+
+    <!-- 게시글 리스트 감정 조회 -->
+    <select id="getPostsEmotion" resultType="Emotion">
+        SELECT
+            pet.post_id,
+            et.id,
+            et.emoji,
+            et.name
+        FROM post_emotion_tag pet
+                 JOIN emotion_tags et ON et.id = pet.emotion_id
+        WHERE pet.post_id IN
+        <foreach collection="postIdList" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY et.id ASC
+    </select>
+
+    <!-- 게시글 디테일 조회 -->
+    <select id="getPostDetail" resultType="com.emotionmap.business.posts.payload.PostDetailResponse$Post">
+        SELECT
+            p.id AS post_id,
+            p.user_id,
+            u.nickname,
+            u.profile_image_url,
+            p.location_id,
+            l.location_name,
+            p.content,
+            p.created_at,
+            CASE WHEN pl.user_id IS NULL THEN 'N' ELSE 'Y' END AS likeYN,
+            CASE WHEN p.user_id = #{userId} THEN TRUE ELSE FALSE END AS isMine,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) AS likeCount,
+            (SELECT COUNT(*) FROM posts WHERE parent_id = p.id) AS commentCount,
+            p.status
+        FROM posts p
+                 LEFT JOIN users u ON u.id = p.user_id
+                 LEFT JOIN locations l ON l.id = p.location_id
+                 LEFT JOIN post_likes pl ON pl.post_id = p.id AND pl.user_id = #{userId}
+        WHERE p.id = #{postId}
+    </select>
+
+    <!-- 직계 하위 게시글(댓글) 조회 -->
+    <select id="getPostChildren" resultType="com.emotionmap.business.posts.payload.PostDetailResponse$Post">
+        SELECT
+            p.id AS post_id,
+            p.user_id,
+            u.nickname,
+            u.profile_image_url,
+            p.location_id,
+            l.location_name,
+            p.content,
+            p.created_at,
+            CASE WHEN pl.user_id IS NULL THEN 'N' ELSE 'Y' END AS likeYN,
+            CASE WHEN p.user_id = #{userId} THEN TRUE ELSE FALSE END AS isMine,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) AS likeCount,
+            (SELECT COUNT(*) FROM posts WHERE parent_id = p.id) AS commentCount,
+            p.status
+        FROM posts p
+                 LEFT JOIN users u ON u.id = p.user_id
+                 LEFT JOIN locations l ON l.id = p.location_id
+                 LEFT JOIN post_likes pl ON pl.post_id = p.id AND pl.user_id = #{userId}
+        WHERE p.parent_id = #{postId}
+        ORDER BY p.created_at ASC
+    </select>
+
+    <!-- 포스트 소유자 조회 -->
+    <select id="selectPostUserId" resultType="Long">
+        SELECT user_id FROM posts WHERE id = #{postId}
+    </select>
+
+    <!-- 포스트 수정 -->
+    <update id="updatePost">
+        UPDATE posts
+        <set>
+            <if test="content != null">content = #{content},</if>
+            <if test="locationId != null">location_id = #{locationId},</if>
+        </set>
+        WHERE id = #{postId}
+    </update>
+
+    <!-- 포스트 감정 태그 전체 삭제 -->
+    <delete id="deletePostEmotionTags">
+        DELETE FROM post_emotion_tag WHERE post_id = #{postId}
+    </delete>
+
+    <!-- 포스트 삭제 (soft delete) -->
+    <update id="softDeletePost">
+        UPDATE posts SET status = 'DELETED' WHERE id = #{postId}
+    </update>
+
+    <!-- 포스트 생성 -->
+    <insert id="insertPost" useGeneratedKeys="true" keyProperty="postId">
+        INSERT INTO posts (user_id, location_id, content, depth)
+        VALUES (#{userId}, #{locationId}, #{content}, 0)
+    </insert>
+
+    <!-- 포스트 감정 태그 등록 -->
+    <insert id="insertPostEmotionTags">
+        INSERT INTO post_emotion_tag (post_id, emotion_id)
+        VALUES
+        <foreach collection="emotionIds" item="emotionId" separator=",">
+            (#{postId}, #{emotionId})
+        </foreach>
+    </insert>
+
+</mapper>

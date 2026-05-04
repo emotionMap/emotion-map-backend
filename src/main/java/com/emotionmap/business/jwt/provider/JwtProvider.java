@@ -1,6 +1,7 @@
-package com.emotionmap.business.auth.provider;
+package com.emotionmap.business.jwt.provider;
 
 import com.emotionmap.business.auth.vo.UserVo;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -32,8 +33,8 @@ public class JwtProvider {
 
         return Jwts.builder()
                 .setClaims(claims)
-                .setIssuedAt(now)
-                .setExpiration(expiry)
+                .setIssuedAt(now) // iat
+                .setExpiration(expiry) // exp
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -48,5 +49,13 @@ public class JwtProvider {
                 .setExpiration(expiry)
                 .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public Claims parse(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 }
