@@ -46,7 +46,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Long userId = claims.get("userId", Long.class);
                 String status = claims.get("status", String.class);
 
-                if (!"REGISTERED".equals(status)) {
+                // UNREGISTERED 토큰은 /profile/create 만 허용
+                if ("UNREGISTERED".equals(status) && !"/profile/create".equals(path)) {
                     sendUnauthorized(response);
                     return;
                 }

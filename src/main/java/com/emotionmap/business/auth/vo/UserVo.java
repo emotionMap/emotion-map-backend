@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,6 +17,8 @@ public class UserVo {
     private String nickname;
     private String profileImageUrl;
     private UserStatusVo status;
+    private String refreshToken;
+    private LocalDateTime refreshTokenExpiresAt;
 
     public static UserVo newSocialUser(String provider, String providerUserId) {
         UserVo user = new UserVo();

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.emotionmap.business.users.mapper">
+<mapper namespace="com.emotionmap.business.auth.mapper.UserMapper">
 
     <select id="findByProviderAndProviderUserId" resultType="UserVo">
         SELECT id,
@@ -10,6 +10,8 @@
                bio,
                profile_image_url,
                status,
+               refresh_token,
+               refresh_token_expires_at,
                last_login_at,
                created_at,
                updated_at
@@ -18,14 +20,45 @@
           AND provider_user_id = #{providerUserId}
     </select>
 
-    <insert id="insertUserInfo" parameterType="UserVo">
+    <select id="findById" resultType="UserVo">
+        SELECT id,
+               provider,
+               provider_user_id,
+               nickname,
+               bio,
+               profile_image_url,
+               status,
+               refresh_token,
+               refresh_token_expires_at,
+               last_login_at,
+               created_at,
+               updated_at
+        FROM users
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insertUserInfo" parameterType="UserVo" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO users (provider,
                            provider_user_id,
                            status)
         VALUES (#{provider},
-                #{provider_user_id},
+                #{providerUserId},
                 #{status})
     </insert>
+
+    <update id="updateRefreshToken">
+        UPDATE users
+        SET refresh_token            = #{refreshToken},
+            refresh_token_expires_at = #{refreshTokenExpiresAt}
+        WHERE id = #{id}
+    </update>
+
+    <update id="clearRefreshToken">
+        UPDATE users
+        SET refresh_token            = NULL,
+            refresh_token_expires_at = NULL
+        WHERE id = #{id}
+    </update>
 
     <delete id="dataClean" >
         DELETE FROM users where 1=1

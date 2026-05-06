@@ -10,6 +10,7 @@ public enum ErrorCode {
 
     /*4XX*/
     AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "AUTH_REQUIRED", "유효하지 않은 토큰입니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN", "유효하지 않은 리프레시 토큰입니다."),
     KAKAO_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "KAKAO_AUTH_FAILED", "카카오 인증 실패입니다."),
     NAVER_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "NAVER_AUTH_FAILED", "네이버 인증 실패입니다."),
     APPLE_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "APPLE_AUTH_FAILED", "애플 인증 실패입니다."),

@@ -17,11 +17,11 @@ public class SocialAuthService {
     public SocialUserInfoVo getUserInfo(String provider, String accessToken) {
 
         switch (provider.toLowerCase()) {
-            case "KAKAO":
+            case "kakao":
                 return kakaoAuthClient.getUserInfo(accessToken);
-            case "NAVER":
+            case "naver":
                 return naverAuthClient.getUserInfo(accessToken);
-            case "APPLE":
+            case "apple":
                 return appleAuthClient.getUserInfo(accessToken);
             default:
                 throw new BusinessException(ErrorCode.SERVER_ERROR);

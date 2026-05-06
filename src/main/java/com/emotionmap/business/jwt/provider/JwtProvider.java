@@ -41,7 +41,7 @@ public class JwtProvider {
 
     public String createRefreshToken(UserVo user) {
         Date now = new Date();
-        Date expiry = new Date(now.getTime() + 1000L * 60 * 60 * 24 * 14); // 14일
+        Date expiry = new Date(now.getTime() + 1000L * 60 * 60 * 24 * 90); // 90일
 
         return Jwts.builder()
                 .setSubject(String.valueOf(user.getId()))
@@ -57,5 +57,9 @@ public class JwtProvider {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    public Long parseSubject(String token) {
+        return Long.valueOf(parse(token).getSubject());
     }
 }
