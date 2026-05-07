@@ -26,5 +26,7 @@ public interface UserMapper {
 
     void clearRefreshToken(@Param("id") Long id);
 
+    void deleteById(@Param("id") Long id);
+
     void dataClean();
 }

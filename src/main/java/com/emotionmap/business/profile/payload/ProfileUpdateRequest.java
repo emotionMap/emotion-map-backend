@@ -8,14 +8,14 @@ import java.util.List;
 
 @Getter
 @Setter
-@Schema(description = "프로필 등록 요청")
-public class ProfileRequest {
+@Schema(description = "프로필 수정 요청")
+public class ProfileUpdateRequest {
     @Schema(description = "닉네임")
     private String nickname;
     @Schema(description = "소개글")
     private String bio;
-    @Schema(description = "이미지 URL")
+    @Schema(description = "프로필 이미지 URL")
     private String profileImageUrl;
-    @Schema(description = "감정 태그 ID 목록 (최소 1개, 최대 5개)")
+    @Schema(description = "감정 태그 ID 목록 (최대 5개, null이면 기존 유지, 빈 배열이면 전체 삭제)")
     private List<Long> emotionTagIds;
 }

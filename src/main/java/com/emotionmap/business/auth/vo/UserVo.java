@@ -15,8 +15,10 @@ public class UserVo {
     private String provider;
     private String providerUserId;
     private String nickname;
+    private String bio;
     private String profileImageUrl;
     private UserStatusVo status;
+    private LocalDateTime createdAt;
     private String refreshToken;
     private LocalDateTime refreshTokenExpiresAt;
 

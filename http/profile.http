@@ -1,0 +1,45 @@
+### 프로필 등록 (회원가입)
+POST {{baseUrl}}/profile/create
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "nickname": "홍길동",
+  "bio": "안녕하세요",
+  "profileImageUrl": "https://example.com/image.jpg",
+  "emotionTagIds": [1, 2]
+}
+
+### 내 프로필 조회
+GET {{baseUrl}}/profile/me
+Authorization: Bearer {{accessToken}}
+
+### 프로필 수정 (닉네임만 변경)
+PATCH {{baseUrl}}/profile/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "nickname": "새닉네임"
+}
+
+### 프로필 수정 (감정 태그 변경)
+PATCH {{baseUrl}}/profile/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "emotionTagIds": [1, 3, 5]
+}
+
+### 프로필 수정 (전체 변경)
+PATCH {{baseUrl}}/profile/me
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "nickname": "새닉네임",
+  "bio": "새 소개글",
+  "profileImageUrl": "https://example.com/new.jpg",
+  "emotionTagIds": [2, 4]
+}

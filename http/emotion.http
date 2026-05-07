@@ -1,0 +1,2 @@
+### 감정 태그 목록 조회
+GET {{baseUrl}}/emotion

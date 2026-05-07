@@ -11,4 +11,34 @@
         WHERE id = #{userId}
     </update>
 
+    <update id="updateProfileInfo">
+        UPDATE users
+        <set>
+            <if test="req.nickname != null">nickname = #{req.nickname},</if>
+            <if test="req.bio != null">bio = #{req.bio},</if>
+            <if test="req.profileImageUrl != null">profile_image_url = #{req.profileImageUrl},</if>
+        </set>
+        WHERE id = #{userId}
+    </update>
+
+    <delete id="deleteEmotionTagsByUserId">
+        DELETE FROM user_emotion_tag
+        WHERE user_id = #{userId}
+    </delete>
+
+    <insert id="insertEmotionTags">
+        INSERT INTO user_emotion_tag (user_id, emotion_id)
+        VALUES
+        <foreach collection="emotionTagIds" item="emotionId" separator=",">
+            (#{userId}, #{emotionId})
+        </foreach>
+    </insert>
+
+    <select id="findEmotionTagsByUserId" resultType="EmotionResponse">
+        SELECT et.id, et.name, et.emoji
+        FROM user_emotion_tag uet
+        JOIN emotion_tags et ON uet.emotion_id = et.id
+        WHERE uet.user_id = #{userId}
+    </select>
+
 </mapper>

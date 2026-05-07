@@ -1,0 +1,20 @@
+### 로그인 (카카오/네이버/애플)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "provider": "kakao",
+  "accessToken": "소셜_액세스_토큰"
+}
+
+### 토큰 갱신
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 로그아웃
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{accessToken}}

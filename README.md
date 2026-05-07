@@ -35,6 +35,13 @@
 | Method | URI | 설명 | 인증 |
 |---|---|---|---|
 | POST | /profile/create | 프로필 등록 (최초 1회) | 필요 |
+| GET | /profile/me | 내 프로필 조회 | 필요 |
+| PATCH | /profile/me | 프로필 수정 | 필요 |
+
+### Users
+| Method | URI | 설명 | 인증 |
+|---|---|---|---|
+| DELETE | /users/me | 회원 탈퇴 | 필요 |
 
 ### Posts
 | Method | URI | 설명 | 인증 |
@@ -51,8 +58,32 @@
 |---|---|---|---|
 | GET | /emotion | 감정 태그 목록 조회 | 필요 |
 
-## 인증 플로우
+## HTTP Client (API 테스트)
+IntelliJ 내장 HTTP Client를 사용합니다. Swagger 없이 IDE에서 바로 API 요청을 실행할 수 있습니다.
 
+1. 서버 실행 후 로그인 요청으로 토큰 발급
+<br/>Swagger(http://localhost:8080/swagger-ui/index.html)에서 로그인 1번만 실행
+2. `http/http-client.env.json`에 토큰 입력
+```json
+{
+  "local": {
+    "baseUrl": "http://localhost:8080",
+    "accessToken": "발급받은_액세스_토큰",
+    "refreshToken": "발급받은_리프레시_토큰"
+  }
+}
+```
+**3. `http/` 폴더의 `.http` 파일에서 `▶` 버튼으로 실행**
+
+| 파일 | 내용 |
+|---|---|
+| `auth.http` | 로그인, 토큰 갱신, 로그아웃 |
+| `profile.http` | 프로필 등록/조회/수정 |
+| `users.http` | 회원 탈퇴 |
+| `posts.http` | 게시글 CRUD |
+| `emotion.http` | 감정 태그 목록 |
+
+## 인증 플로우
 1. 클라이언트가 소셜 Access Token을 `/auth/login`으로 전달
 2. 서버가 소셜 제공자 API로 사용자 정보 검증
 3. 신규 유저면 DB에 생성 (status: `UNREGISTERED`)

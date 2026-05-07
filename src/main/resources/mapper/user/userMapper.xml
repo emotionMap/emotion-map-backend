@@ -60,6 +60,11 @@
         WHERE id = #{id}
     </update>
 
+    <delete id="deleteById">
+        DELETE FROM users
+        WHERE id = #{id}
+    </delete>
+
     <delete id="dataClean" >
         DELETE FROM users where 1=1
     </delete>
