@@ -17,7 +17,7 @@ import java.util.Map;
 import static com.emotionmap.business.auth.vo.UserStatusVo.REGISTERED;
 
 
-@Tag(name = "1테스트 API", description = "테스트 API")
+@Tag(name = "테스트 API", description = "테스트 API")
 @RestController
 @RequestMapping("/test")
 @RequiredArgsConstructor

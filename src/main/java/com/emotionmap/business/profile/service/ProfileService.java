@@ -13,11 +13,13 @@ import com.emotionmap.business.profile.payload.ProfileUpdateRequest;
 import com.emotionmap.common.code.ErrorCode;
 import com.emotionmap.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProfileService {
@@ -34,6 +36,7 @@ public class ProfileService {
             throw new BusinessException(ErrorCode.NOT_FIND_USER_INFO);
         }
         if (user.isActive()) {
+            log.warn("[Profile] 이미 등록된 유저 프로필 재등록 시도 - userId: {}", userId);
             throw new BusinessException(ErrorCode.EXAMPLE0);
         }
 

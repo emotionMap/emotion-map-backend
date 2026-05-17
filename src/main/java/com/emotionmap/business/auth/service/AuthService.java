@@ -37,10 +37,12 @@ public class AuthService {
         if (user == null) {
             user = UserVo.newSocialUser(provider, socialUser.getId());
             userMapper.insertUserInfo(user);
+            log.info("[Auth] 신규 유저 생성 - provider: {}, providerUserId: {}", provider, socialUser.getId());
         }
 
         // 4. JWT 발급 + RT DB 저장
         JWTToken token = issueAndSaveTokens(user);
+        log.info("[Auth] 로그인 성공 - userId: {}, status: {}", user.getId(), user.getStatus());
 
         return new AuthLoginResponse(user.getStatus(), token);
     }
@@ -52,12 +54,14 @@ public class AuthService {
         try {
             userId = jwtProvider.parseSubject(refreshToken);
         } catch (Exception e) {
+            log.warn("[Auth] Refresh Token 서명/만료 검증 실패");
             throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
         // 2. DB의 RT와 일치 여부 확인 (로그아웃된 토큰 차단)
         UserVo user = userMapper.findById(userId);
         if (user == null || !refreshToken.equals(user.getRefreshToken())) {
+            log.warn("[Auth] Refresh Token 불일치 - userId: {}", userId);
             throw new BusinessException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 

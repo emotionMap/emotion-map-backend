@@ -116,6 +116,7 @@ public class PostsService {
             throw new BusinessException(ErrorCode.POST_NOT_FOUND);
         }
         if (!ownerId.equals(userId)) {
+            log.warn("[Posts] 수정 권한 없음 - postId: {}, userId: {}, ownerId: {}", postId, userId, ownerId);
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
 
@@ -136,6 +137,7 @@ public class PostsService {
             throw new BusinessException(ErrorCode.POST_NOT_FOUND);
         }
         if (!ownerId.equals(userId)) {
+            log.warn("[Posts] 삭제 권한 없음 - postId: {}, userId: {}, ownerId: {}", postId, userId, ownerId);
             throw new BusinessException(ErrorCode.FORBIDDEN);
         }
         postsMapper.softDeletePost(postId);

@@ -17,7 +17,7 @@
             CASE WHEN p.user_id = #{userId} THEN TRUE ELSE FALSE END AS isMine,
             (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) AS likeCount,
             (SELECT COUNT(*) FROM posts WHERE parent_id = p.id) AS commentCount,
-            status
+            p.status
         FROM posts p
                  LEFT JOIN users u ON u.id = p.user_id
                  LEFT JOIN locations l ON l.id = p.location_id

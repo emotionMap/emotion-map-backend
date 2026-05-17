@@ -7,6 +7,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +19,7 @@ import java.util.List;
 
 /**
  * 모든 HTTP 요청마다 딱한번 Controller 가기전에 무조건 실행되는 코드*/
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -30,14 +32,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String path = request.getRequestURI();
 
-            // 🔥 인증이 필요 없는 URL 추가
-            if (path.startsWith("/auth/test-login") || path.startsWith("/auth/login") || path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui")) {
+            // 인증이 필요 없는 URL
+            if (path.startsWith("/auth/login")
+                    || path.startsWith("/auth/refresh")
+                    || path.startsWith("/test/")
+                    || path.startsWith("/v3/api-docs")
+                    || path.startsWith("/swagger-ui")
+                    || path.startsWith("/emotion")) {
                 filterChain.doFilter(request, response);
                 return;
             }
 
             // 요청 헤더에 Authorization: Bearer xxx 있는지
             String token = resolveToken(request);
+
+            if (token == null) {
+                log.warn("[JWT] Authorization 헤더 없음 - path: {}", path);
+                sendUnauthorized(response);
+                return;
+            }
 
             // 토큰 검증 시작
             if (token != null) {
@@ -62,6 +75,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
 
         } catch (Exception e) {
+            log.warn("[JWT] 토큰 파싱 실패 - {}: {}", e.getClass().getSimpleName(), e.getMessage());
             sendUnauthorized(response);
         }
     }
