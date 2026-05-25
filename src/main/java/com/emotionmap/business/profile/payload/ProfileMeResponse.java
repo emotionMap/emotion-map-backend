@@ -22,4 +22,10 @@ public class ProfileMeResponse {
     private LocalDateTime createdAt;
     @Schema(description = "감정 태그 목록 (최대 5개)")
     private List<EmotionResponse> emotionTags;
+    @Schema(description = "위치 ID")
+    private Long locationId;
+    @Schema(description = "시/도")
+    private String siDo;
+    @Schema(description = "시/군/구")
+    private String siGunGu;
 }

@@ -132,7 +132,9 @@ Available at `http://localhost:8080/swagger-ui/index.html` when running locally.
 
 ### Location
 - 게시글 1개에 위치 1개 연결 (locations 테이블)
-- 지도 표시에 사용한다.
+- si_do(시/도) + si_gun_gu(시/군/구) 계층 구조로 전국 단위 확장 가능
+- 사용자가 시/도 선택 후 시/군/구를 선택하는 2단계 UI 흐름에 대응한다.
+- posts.location_id는 구 단위 locations.id를 참조한다.
 
 ### Map
 - 위치 데이터 기반으로 게시글을 지도 위에 표시한다.

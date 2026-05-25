@@ -10,7 +10,8 @@ import java.util.List;
 public interface PostsMapper {
     // 포스트 리스트
     List<PostListResponse> getPosts(@Param("offset") int offset, @Param("size") int size,
-                                    @Param("userId") Long userId, @Param("filterUserId") Long filterUserId);
+                                    @Param("userId") Long userId, @Param("filterUserId") Long filterUserId,
+                                    @Param("locationId") Long locationId);
     List<Image> getPostsImage(List<Long> postIdList);
     List<Emotion> getPostsEmotion(List<Long> postIdList);
 

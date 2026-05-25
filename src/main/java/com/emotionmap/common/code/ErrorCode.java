@@ -20,7 +20,8 @@ public enum ErrorCode {
     INVALID_POST_REQUEST(HttpStatus.BAD_REQUEST, "INVALID_POST_REQUEST", "위치와 감정 태그는 필수입니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "해당 게시글에 대한 권한이 없습니다."),
     EMOTION_TAG_REQUIRED(HttpStatus.BAD_REQUEST, "EMOTION_TAG_REQUIRED", "감정 태그는 최소 1개 이상 선택해야 합니다."),
-    EMOTION_TAG_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "EMOTION_TAG_LIMIT_EXCEEDED", "감정 태그는 최대 5개까지 선택할 수 있습니다.")
+    EMOTION_TAG_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "EMOTION_TAG_LIMIT_EXCEEDED", "감정 태그는 최대 5개까지 선택할 수 있습니다."),
+    LOCATION_REQUIRED(HttpStatus.BAD_REQUEST, "LOCATION_REQUIRED", "위치는 필수입니다.")
 
     /*5XX*/,
     DB_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "DB_ERROR", "데이터 처리 중 오류가 발생했습니다."),

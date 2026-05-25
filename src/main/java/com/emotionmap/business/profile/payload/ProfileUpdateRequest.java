@@ -18,4 +18,6 @@ public class ProfileUpdateRequest {
     private String profileImageUrl;
     @Schema(description = "감정 태그 ID 목록 (최대 5개, null이면 기존 유지, 빈 배열이면 전체 삭제)")
     private List<Long> emotionTagIds;
+    @Schema(description = "위치 ID (null이면 기존 유지)")
+    private Long locationId;
 }

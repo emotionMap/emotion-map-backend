@@ -30,8 +30,10 @@ public class PostDetailResponse {
         private String profileImageUrl;
         @Schema(description = "위치 아이디")
         private Long locationId;
-        @Schema(description = "위치")
-        private String locationName;
+        @Schema(description = "시/도")
+        private String siDo;
+        @Schema(description = "시/군/구")
+        private String siGunGu;
         @Schema(description = "내용")
         private String content;
         @Schema(description = "작성시간")

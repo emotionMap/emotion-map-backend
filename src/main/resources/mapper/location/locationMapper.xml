@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.emotionmap.business.location.mapper.LocationMapper">
+
+    <select id="getSido" resultType="String">
+        SELECT DISTINCT si_do
+        FROM locations
+        ORDER BY si_do ASC
+    </select>
+
+    <select id="getSigungu" resultType="SigunguResponse">
+        SELECT id AS location_id, si_gun_gu
+        FROM locations
+        WHERE si_do = #{siDo}
+        ORDER BY si_gun_gu ASC
+    </select>
+
+</mapper>

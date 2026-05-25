@@ -1,5 +1,7 @@
 package com.emotionmap.business.posts.service;
 
+import com.emotionmap.business.auth.mapper.UserMapper;
+import com.emotionmap.business.auth.vo.UserVo;
 import com.emotionmap.business.posts.mapper.PostsMapper;
 import com.emotionmap.business.posts.payload.*;
 import com.emotionmap.common.code.ErrorCode;
@@ -20,43 +22,43 @@ import java.util.stream.Collectors;
 public class PostsService {
 
     private final PostsMapper postsMapper;
+    private final UserMapper userMapper;
 
-    /**포스트 리스트 조회*/
+    /**포스트 리스트 조회 - 메인 피드 (사용자 설정 위치 기준 필터)*/
     public List<PostListResponse> getPostList(int page, int size, Long userId, Long filterUserId) {
+        UserVo user = userMapper.findById(userId);
+        Long locationId = user != null ? user.getLocationId() : null;
+        return fetchPosts(page, size, userId, filterUserId, locationId);
+    }
 
+    /**마이페이지 - 나의 글 리스트 (위치 필터 없음)*/
+    public List<PostListResponse> getMyPosts(int page, int size, Long userId) {
+        return fetchPosts(page, size, userId, userId, null);
+    }
+
+    private List<PostListResponse> fetchPosts(int page, int size, Long userId, Long filterUserId, Long locationId) {
         int offset = (page - 1) * size;
 
-        // 포스트 조회
-        List<PostListResponse> posts = postsMapper.getPosts(offset, size, userId, filterUserId);
+        List<PostListResponse> posts = postsMapper.getPosts(offset, size, userId, filterUserId, locationId);
         if (posts.isEmpty()) {
             return Collections.emptyList();
         }
 
-        // 포스트 ID 조회
         List<Long> postIdList = posts.stream()
                 .map(PostListResponse::getPostId)
                 .toList();
 
-        // 이미지 조회
         List<Image> images = postsMapper.getPostsImage(postIdList);
-        // 감정 조회
         List<Emotion> emotions = postsMapper.getPostsEmotion(postIdList);
 
-        // postId 기준 그룹핑
         Map<Long, List<Image>> imageMap = images.stream()
                 .collect(Collectors.groupingBy(Image::getPostId));
-
         Map<Long, List<Emotion>> emotionMap = emotions.stream()
                 .collect(Collectors.groupingBy(Emotion::getPostId));
 
-        // 조립
         for (PostListResponse post : posts) {
-            post.setImageList(
-                    imageMap.getOrDefault(post.getPostId(), Collections.emptyList())
-            );
-            post.setEmotionList(
-                    emotionMap.getOrDefault(post.getPostId(), Collections.emptyList())
-            );
+            post.setImageList(imageMap.getOrDefault(post.getPostId(), Collections.emptyList()));
+            post.setEmotionList(emotionMap.getOrDefault(post.getPostId(), Collections.emptyList()));
         }
 
         return posts;
@@ -143,8 +145,4 @@ public class PostsService {
         postsMapper.softDeletePost(postId);
     }
 
-    /**마이페이지 - 나의 글 리스트*/
-    public List<PostListResponse> getMyPosts(int page, int size, Long userId) {
-        return getPostList(page, size, userId, userId);
-    }
 }

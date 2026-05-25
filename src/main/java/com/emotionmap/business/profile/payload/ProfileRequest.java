@@ -18,4 +18,6 @@ public class ProfileRequest {
     private String profileImageUrl;
     @Schema(description = "감정 태그 ID 목록 (최소 1개, 최대 5개)")
     private List<Long> emotionTagIds;
+    @Schema(description = "위치 ID")
+    private Long locationId;
 }

@@ -10,7 +10,8 @@
             u.nickname,
             u.profile_image_url,
             p.location_id,
-            l.location_name,
+            l.si_do,
+            l.si_gun_gu,
             p.content,
             p.created_at,
             CASE WHEN pl.user_id IS NULL THEN 'N' ELSE 'Y' END AS likeYN,
@@ -25,6 +26,9 @@
         WHERE p.depth = 0
         <if test="filterUserId != null">
             AND p.user_id = #{filterUserId}
+        </if>
+        <if test="locationId != null">
+            AND p.location_id = #{locationId}
         </if>
         ORDER BY p.id DESC
         LIMIT #{size}
@@ -68,7 +72,8 @@
             u.nickname,
             u.profile_image_url,
             p.location_id,
-            l.location_name,
+            l.si_do,
+            l.si_gun_gu,
             p.content,
             p.created_at,
             CASE WHEN pl.user_id IS NULL THEN 'N' ELSE 'Y' END AS likeYN,
@@ -91,7 +96,8 @@
             u.nickname,
             u.profile_image_url,
             p.location_id,
-            l.location_name,
+            l.si_do,
+            l.si_gun_gu,
             p.content,
             p.created_at,
             CASE WHEN pl.user_id IS NULL THEN 'N' ELSE 'Y' END AS likeYN,

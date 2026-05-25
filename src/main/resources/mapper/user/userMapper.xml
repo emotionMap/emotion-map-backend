@@ -3,38 +3,46 @@
 <mapper namespace="com.emotionmap.business.auth.mapper.UserMapper">
 
     <select id="findByProviderAndProviderUserId" resultType="UserVo">
-        SELECT id,
-               provider,
-               provider_user_id,
-               nickname,
-               bio,
-               profile_image_url,
-               status,
-               refresh_token,
-               refresh_token_expires_at,
-               last_login_at,
-               created_at,
-               updated_at
-        FROM users
-        WHERE provider = #{provider}
-          AND provider_user_id = #{providerUserId}
+        SELECT u.id,
+               u.provider,
+               u.provider_user_id,
+               u.nickname,
+               u.bio,
+               u.profile_image_url,
+               u.status,
+               u.refresh_token,
+               u.refresh_token_expires_at,
+               u.last_login_at,
+               u.created_at,
+               u.updated_at,
+               u.location_id,
+               l.si_do,
+               l.si_gun_gu
+        FROM users u
+        LEFT JOIN locations l ON l.id = u.location_id
+        WHERE u.provider = #{provider}
+          AND u.provider_user_id = #{providerUserId}
     </select>
 
     <select id="findById" resultType="UserVo">
-        SELECT id,
-               provider,
-               provider_user_id,
-               nickname,
-               bio,
-               profile_image_url,
-               status,
-               refresh_token,
-               refresh_token_expires_at,
-               last_login_at,
-               created_at,
-               updated_at
-        FROM users
-        WHERE id = #{id}
+        SELECT u.id,
+               u.provider,
+               u.provider_user_id,
+               u.nickname,
+               u.bio,
+               u.profile_image_url,
+               u.status,
+               u.refresh_token,
+               u.refresh_token_expires_at,
+               u.last_login_at,
+               u.created_at,
+               u.updated_at,
+               u.location_id,
+               l.si_do,
+               l.si_gun_gu
+        FROM users u
+        LEFT JOIN locations l ON l.id = u.location_id
+        WHERE u.id = #{id}
     </select>
 
     <insert id="insertUserInfo" parameterType="UserVo" useGeneratedKeys="true" keyProperty="id">

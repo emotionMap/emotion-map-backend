@@ -40,6 +40,10 @@ public class ProfileService {
             throw new BusinessException(ErrorCode.EXAMPLE0);
         }
 
+        if (request.getLocationId() == null) {
+            throw new BusinessException(ErrorCode.LOCATION_REQUIRED);
+        }
+
         List<Long> emotionTagIds = request.getEmotionTagIds();
         if (emotionTagIds == null || emotionTagIds.isEmpty()) {
             throw new BusinessException(ErrorCode.EMOTION_TAG_REQUIRED);
@@ -71,7 +75,10 @@ public class ProfileService {
                 user.getBio(),
                 user.getProfileImageUrl(),
                 user.getCreatedAt(),
-                emotionTags
+                emotionTags,
+                user.getLocationId(),
+                user.getSiDo(),
+                user.getSiGunGu()
         );
     }
 
@@ -110,14 +117,18 @@ public class ProfileService {
             profilerMapper.insertEmotionTags(userId, emotionTagIds);
         }
 
+        UserVo updatedUser = userMapper.findById(userId);
         List<EmotionResponse> updatedTags = profilerMapper.findEmotionTagsByUserId(userId);
 
         return new ProfileMeResponse(
-                request.getNickname() != null ? request.getNickname() : user.getNickname(),
-                request.getBio() != null ? request.getBio() : user.getBio(),
-                request.getProfileImageUrl() != null ? request.getProfileImageUrl() : user.getProfileImageUrl(),
-                user.getCreatedAt(),
-                updatedTags
+                updatedUser.getNickname(),
+                updatedUser.getBio(),
+                updatedUser.getProfileImageUrl(),
+                updatedUser.getCreatedAt(),
+                updatedTags,
+                updatedUser.getLocationId(),
+                updatedUser.getSiDo(),
+                updatedUser.getSiGunGu()
         );
     }
 }

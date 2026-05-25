@@ -21,6 +21,9 @@ public class UserVo {
     private LocalDateTime createdAt;
     private String refreshToken;
     private LocalDateTime refreshTokenExpiresAt;
+    private Long locationId;
+    private String siDo;
+    private String siGunGu;
 
     public static UserVo newSocialUser(String provider, String providerUserId) {
         UserVo user = new UserVo();

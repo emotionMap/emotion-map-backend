@@ -58,6 +58,12 @@
 |---|---|---|---|
 | GET | /emotion | 감정 태그 목록 조회 | 필요 |
 
+### Location
+| Method | URI | 설명 | 인증 |
+|---|---|---|---|
+| GET | /location/sido | 시/도 목록 조회 | 필요 |
+| GET | /location/sigungu?siDo= | 시/군/구 목록 조회 | 필요 |
+
 ## HTTP Client (API 테스트)
 IntelliJ 내장 HTTP Client를 사용합니다. Swagger 없이 IDE에서 바로 API 요청을 실행할 수 있습니다.
 
@@ -88,7 +94,7 @@ IntelliJ 내장 HTTP Client를 사용합니다. Swagger 없이 IDE에서 바로 
 2. 서버가 소셜 제공자 API로 사용자 정보 검증
 3. 신규 유저면 DB에 생성 (status: `UNREGISTERED`)
 4. Access Token (30분) + Refresh Token (90일) 발급
-5. `UNREGISTERED` 유저는 `/profile/create` 호출로 프로필 등록 후 `REGISTERED` 전환
+5. `UNREGISTERED` 유저는 `/profile/create` 호출로 프로필 등록(닉네임·사진·감정태그·위치) 후 `REGISTERED` 전환
 6. 이후 모든 요청은 `Authorization: Bearer {accessToken}` 헤더로 인증
 7. Access Token 만료 시 `/auth/refresh`로 토큰 갱신 (Refresh Token Rotation)
 
@@ -102,6 +108,7 @@ src/main/java/com/emotionmap
 │   ├── profile/     # 프로필 등록
 │   ├── posts/       # 게시글 CRUD
 │   ├── emotion/     # 감정 태그 목록
+│   ├── location/    # 시/도·시/군/구 위치 조회
 │   └── map/         # 지도 위치 기능
 └── common/
     ├── config/      # Security, S3, Swagger 설정
@@ -113,12 +120,12 @@ src/main/java/com/emotionmap
 ## ERD 요약
 
 ```
-users
+users ──── locations (location_id)
  ├─< posts (user_id)
  │      └─< post_images      (post_id)
  │      └─< post_emotion_tag (post_id) >─ emotion_tags
  │      └─< post_likes       (post_id, user_id)
- │      └── locations        (location_id)
+ │      └── locations         (location_id)
  └─< user_emotion_tag (user_id) >─ emotion_tags
 ```
 
