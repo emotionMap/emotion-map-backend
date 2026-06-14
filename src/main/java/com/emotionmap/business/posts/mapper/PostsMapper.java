@@ -30,4 +30,9 @@ public interface PostsMapper {
 
     // 포스트 삭제
     void softDeletePost(Long postId);
+
+    // 좋아요
+    boolean existsLike(@Param("postId") Long postId, @Param("userId") Long userId);
+    void insertLike(@Param("postId") Long postId, @Param("userId") Long userId);
+    void deleteLike(@Param("postId") Long postId, @Param("userId") Long userId);
 }

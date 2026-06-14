@@ -131,8 +131,34 @@ public class PostsService {
         }
     }
 
+    /**좋아요 토글*/
+    public String toggleLike(Long postId, Long userId) {
+        Long ownerId = postsMapper.selectPostUserId(postId);
+        if (ownerId == null) {
+            throw new BusinessException(ErrorCode.POST_NOT_FOUND);
+        }
+        if (postsMapper.existsLike(postId, userId)) {
+            postsMapper.deleteLike(postId, userId);
+            return "N";
+        } else {
+            postsMapper.insertLike(postId, userId);
+            return "Y";
+        }
+    }
+
+    /**댓글 작성*/
+    public Long createComment(Long parentId, PostCreateRequest request, Long userId) {
+        Long ownerId = postsMapper.selectPostUserId(parentId);
+        if (ownerId == null) {
+            throw new BusinessException(ErrorCode.POST_NOT_FOUND);
+        }
+        request.setUserId(userId);
+        request.setParentId(parentId);
+        postsMapper.insertPost(request);
+        return request.getPostId();
+    }
+
     /**포스트 삭제*/
-    @Transactional
     public void delete(Long postId, Long userId) {
         Long ownerId = postsMapper.selectPostUserId(postId);
         if (ownerId == null) {

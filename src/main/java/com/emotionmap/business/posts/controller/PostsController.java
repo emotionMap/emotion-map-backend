@@ -63,6 +63,22 @@ public class PostsController {
         return ResponseEntity.ok(ApiResponse.of(null));
     }
 
+    @Operation(summary = "좋아요 토글 (없으면 추가, 있으면 취소)")
+    @PostMapping("/{postId}/like")
+    public ResponseEntity<ApiResponse<String>> toggleLike(@AuthenticationPrincipal JwtUser jwtUser,
+            @PathVariable Long postId) {
+        String likeYN = postService.toggleLike(postId, jwtUser.getUserId());
+        return ResponseEntity.ok(ApiResponse.of(likeYN));
+    }
+
+    @Operation(summary = "댓글 작성")
+    @PostMapping("/{postId}/comments")
+    public ResponseEntity<ApiResponse<Long>> createComment(@AuthenticationPrincipal JwtUser jwtUser,
+            @PathVariable Long postId, @RequestBody PostCreateRequest request) {
+        Long commentId = postService.createComment(postId, request, jwtUser.getUserId());
+        return ResponseEntity.ok(ApiResponse.of(commentId));
+    }
+
     @Operation(summary = "내가 작성한 포스트")
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<List<PostListResponse>>> myPosts(@AuthenticationPrincipal JwtUser jwtUser,

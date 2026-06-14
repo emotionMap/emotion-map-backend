@@ -20,6 +20,9 @@ public class PostCreateRequest {
     @Schema(description = "본문 (선택)")
     private String content;
 
+    @Schema(description = "부모 게시글 ID (댓글 작성 시)")
+    private Long parentId;
+
     // 서비스에서 주입 / MyBatis 생성 키 수신
     private Long userId;
     private Long postId;
