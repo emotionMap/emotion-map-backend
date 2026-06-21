@@ -28,8 +28,10 @@ users ──── locations (location_id)
 | nickname | nickname | varchar(50) NULL | 닉네임 |
 | bio | bio | varchar(255) NULL | 자기소개 |
 | profile_image_url | profileImageUrl | varchar(300) NULL | 프로필 이미지 URL |
-| status | status | enum('REGISTERED','UNREGISTERED','pending_profile') NULL | 회원 상태 (MVP: REGISTERED/UNREGISTERED만 사용) |
+| status | status | enum('REGISTERED','UNREGISTERED') NULL | 회원 상태 |
 | location_id | locationId | int NULL | FK → locations.id (프로필 등록 시 설정, 설정에서 변경 가능) |
+| refresh_token | refreshToken | varchar NULL | 리프레시 토큰 값 |
+| refresh_token_expires_at | refreshTokenExpiresAt | datetime NULL | 리프레시 토큰 만료 일시 |
 | last_login_at | lastLoginAt | datetime NULL | 마지막 로그인 일시 |
 | created_at | createdAt | datetime NOT NULL DEFAULT CURRENT_TIMESTAMP | 생성 일시 |
 | updated_at | updatedAt | datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 수정 일시 |

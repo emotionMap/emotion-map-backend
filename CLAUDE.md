@@ -32,13 +32,33 @@ The active Spring profile defaults to `local`. To switch: `./gradlew bootRun --a
 ```
 com.emotionmap
 ├── business/
-│   ├── auth/          # Social login (Kakao, Naver, Apple) + JWT issuance
-│   ├── jwt/           # JwtProvider, JwtAuthenticationFilter, JwtUser
-│   ├── posts/         # Post CRUD with images, emotions, likes
-│   ├── profile/       # Profile registration (post-social-login step)
-│   ├── emotion/       # Emotion tag listing
-│   ├── users/         # User domain VO
-│   └── map/           # Location features
+│   ├── auth/          # 소셜 로그인 (Kakao, Naver, Apple) + JWT 발급
+│   │   ├── controller/    # AuthController → /auth
+│   │   ├── mapper/        # UserMapper
+│   │   ├── payload/       # AuthLoginRequest/Response, AuthRefreshRequest
+│   │   ├── service/       # AuthService, SocialAuthService, KakaoAuthClient, NaverAuthClient, AppleAuthClient
+│   │   └── vo/            # UserVo, UserStatusVo, JWTToken, SocialUserInfoVo
+│   ├── jwt/               # JwtProvider, JwtAuthenticationFilter, JwtUser
+│   ├── posts/             # 게시글 CRUD + 좋아요 + 댓글
+│   │   ├── controller/    # PostsController → /posts
+│   │   ├── mapper/        # PostsMapper
+│   │   ├── payload/       # PostListResponse, PostDetailResponse, PostCreateRequest, PostUpdateRequest, Image, Emotion, Status
+│   │   └── service/       # PostsService
+│   ├── profile/           # 프로필 등록 및 관리 (소셜 로그인 후속 단계)
+│   │   ├── controller/    # ProfileController → /profile
+│   │   ├── mapper/        # ProfilerMapper
+│   │   ├── payload/       # ProfileRequest, ProfileUpdateRequest, ProfileResponse, ProfileMeResponse
+│   │   └── service/       # ProfileService
+│   ├── emotion/           # 감정 태그 목록 조회
+│   │   ├── controller/    # EmotionController → /emotion  ← 서비스 없이 mapper 직접 호출
+│   │   ├── mapper/        # EmotionMapper
+│   │   └── payload/       # EmotionResponse
+│   ├── location/          # 위치(시/도, 시/군/구) 조회
+│   │   ├── controller/    # LocationController → /location  ← 서비스 없이 mapper 직접 호출
+│   │   ├── mapper/        # LocationMapper
+│   │   └── payload/       # SigunguResponse
+│   └── users/             # 사용자 관리 (탈퇴만)
+│       └── controller/    # UserController → /users  ← ProfileService 위임
 ├── common/
 │   ├── config/        # SecurityConfig, S3Config, SwaggerConfig, RestTemplateConfig
 │   ├── code/          # ErrorCode enum
@@ -47,9 +67,35 @@ com.emotionmap
 └── test/              # S3Service test stub, TestController
 ```
 
+### API Endpoints
+
+| 메서드 | URL | 설명 | 인증 |
+|---|---|---|---|
+| POST | /auth/login | 소셜 로그인 (provider: kakao/naver/apple) | 불필요 |
+| POST | /auth/refresh | 액세스 토큰 갱신 (리프레시 토큰 사용) | 불필요 |
+| POST | /auth/logout | 로그아웃 (리프레시 토큰 무효화) | 필요 |
+| POST | /profile/create | 프로필 등록 (UNREGISTERED → REGISTERED) | 필요 |
+| GET | /profile/me | 내 프로필 조회 | 필요 |
+| PATCH | /profile/me | 내 프로필 수정 | 필요 |
+| GET | /users/{userId} | 타 사용자 프로필 조회 (REGISTERED 유저만) | 필요 |
+| DELETE | /users/me | 회원 탈퇴 | 필요 |
+| GET | /posts | 게시글 목록 (사용자 위치 기반 자동 필터) | 필요 |
+| GET | /posts/me | 내 게시글 목록 | 필요 |
+| GET | /posts/{postId} | 게시글 상세 (댓글 포함) | 필요 |
+| POST | /posts | 게시글 생성 | 필요 |
+| PATCH | /posts/{postId} | 게시글 수정 | 필요 |
+| DELETE | /posts/{postId} | 게시글 삭제 (soft delete) | 필요 |
+| POST | /posts/{postId}/like | 좋아요 토글 | 필요 |
+| POST | /posts/{postId}/comments | 댓글 작성 | 필요 |
+| GET | /emotion | 감정 태그 목록 | 필요 |
+| GET | /location/sido | 시/도 목록 | 불필요 |
+| GET | /location/sigungu?siDo= | 시/군/구 목록 | 불필요 |
+
 ### Request lifecycle
 
-1. `JwtAuthenticationFilter` validates `Authorization: Bearer <token>` and sets a `JwtUser` (userId, status) as the Spring Security principal — skip filter for `/auth/**`, `/swagger-ui/**`, `/v3/api-docs/**`, `/test/**`.
+1. `JwtAuthenticationFilter`가 `Authorization: Bearer <token>`을 검증하고, `JwtUser` (userId, status)를 Spring Security principal로 설정한다.
+   - 필터 제외 경로: `/auth/**`, `/swagger-ui/**`, `/v3/api-docs/**`, `/test/**`
+   - `SecurityConfig`는 `.anyRequest().permitAll()`로 설정되어 있으나, 실질적 인증은 JwtAuthenticationFilter가 담당한다. 필터를 통과하지 못하면 컨트롤러에서 `@AuthenticationPrincipal`이 null이 되어 NPE가 발생한다.
 2. Controllers extract the principal via `@AuthenticationPrincipal JwtUser jwtUser`.
 3. Services call MyBatis mapper interfaces; mapper XML lives under `src/main/resources/mapper/`.
 4. All responses are wrapped in `ApiResponse<T>` (`{ "data": ... }`); errors go through `GlobalExceptionHandler` → `ErrorResponse`.
@@ -58,13 +104,55 @@ com.emotionmap
 
 - Social login hits `AuthController` → `SocialAuthService` delegates to provider-specific client (Kakao/Naver/Apple).
 - On success, `JwtProvider` issues an access token (30 min, claims: `userId`, `status`) and a refresh token (14 days, subject = userId).
+- 리프레시 토큰은 DB (`users.refresh_token`, `users.refresh_token_expires_at`)에 저장된다. 갱신 요청 시 DB 값과 대조 검증.
 - New users have `status = UNREGISTERED` and must complete profile registration via `ProfileController` before accessing other features.
+- 로그아웃 시 DB의 `refresh_token`, `refresh_token_expires_at`을 NULL로 초기화한다.
 
 ### MyBatis conventions
 
 - Mapper interfaces live alongside domain classes (`business/<domain>/mapper/`); XML files are at `src/main/resources/mapper/<domain>/`.
 - `application.yml` enables `map-underscore-to-camel-case: true`, so DB column `created_at` maps to `createdAt` automatically.
 - MyBatis debug logging is on (`logging.level.com.emotionmap: DEBUG`).
+- **Post 조회 패턴 (N+1 회피)**: 게시글 목록/상세 조회 시 images와 emotions를 별도 쿼리로 일괄 조회한 뒤 Java 코드에서 postId 기준으로 조립한다.
+  ```
+  getPosts() → postIdList 추출 → getPostsImage(postIdList), getPostsEmotion(postIdList) → 각 post에 set
+  ```
+
+### Business rules
+
+- **게시글 생성 필수값**: `locationId`, `emotionIds` (비어있으면 `INVALID_POST_REQUEST`)
+- **게시글/댓글 구분 없음**: posts 테이블 하나로 모두 표현한다. `parent_id = null`이면 루트 게시글, `parent_id`가 있으면 하위 게시글이다. "댓글" 개념이 아니라 **하위 게시글 진입** 구조 — 하위 게시글을 클릭하면 그 게시글을 루트로 하는 새 화면으로 진입하고, 거기서 또 하위 게시글을 작성할 수 있다. 중첩 렌더링(대댓글)은 없다. 항상 "현재 게시글 + 직계 하위 게시글" 구조이므로 재귀 조회가 필요 없다.
+- **하위 게시글 생성**: `POST /posts/{postId}/comments` — 내부적으로 `insertPost`를 재사용하며 `parentId`를 설정. `depth`는 DB에서 부모의 `depth + 1`로 자동 계산됨.
+- **게시글 삭제**: soft delete — `status = 'DELETED'` 업데이트, DB에서 실제 삭제하지 않음.
+- **좋아요 토글**: 반환값 `"Y"` (좋아요 추가) / `"N"` (취소).
+- **피드 조회 위치 필터**: 사용자의 `users.location_id`로 자동 필터링. location이 없으면 전체 조회.
+- **감정 태그 (프로필)**: 최소 1개, 최대 5개 제한 (애플리케이션 레이어 검증).
+- **권한 검사**: 수정/삭제 시 `posts.user_id`와 요청자 userId 비교. 불일치 시 `FORBIDDEN`.
+- **회원 탈퇴**: `users` 레코드 완전 삭제 (ON DELETE CASCADE로 관련 데이터 자동 삭제).
+
+### Common coding patterns
+
+**에러 발생**
+```java
+throw new BusinessException(ErrorCode.POST_NOT_FOUND);
+```
+
+**응답 래핑**
+```java
+return ResponseEntity.ok(ApiResponse.of(data));  // 데이터 있는 경우
+return ResponseEntity.ok(ApiResponse.of(null));  // void
+```
+
+**페이지네이션** (게시글 목록)
+- 파라미터: `page` (1-based, default=1), `size` (default=20)
+- offset 계산: `offset = (page - 1) * size`
+
+**소유권 검증 패턴**
+```java
+Long ownerId = postsMapper.selectPostUserId(postId);
+if (ownerId == null) throw new BusinessException(ErrorCode.POST_NOT_FOUND);
+if (!ownerId.equals(userId)) throw new BusinessException(ErrorCode.FORBIDDEN);
+```
 
 ### Key domain relationships
 
@@ -138,4 +226,3 @@ Available at `http://localhost:8080/swagger-ui/index.html` when running locally.
 
 ### Map
 - 위치 데이터 기반으로 게시글을 지도 위에 표시한다.
-

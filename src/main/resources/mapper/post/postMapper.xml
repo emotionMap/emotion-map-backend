@@ -23,7 +23,7 @@
                  LEFT JOIN users u ON u.id = p.user_id
                  LEFT JOIN locations l ON l.id = p.location_id
                  LEFT JOIN post_likes pl ON pl.post_id = p.id AND pl.user_id = #{userId}
-        WHERE p.depth = 0
+        WHERE p.depth = 0 AND p.status = 'ACTIVE'
         <if test="filterUserId != null">
             AND p.user_id = #{filterUserId}
         </if>
@@ -85,7 +85,7 @@
                  LEFT JOIN users u ON u.id = p.user_id
                  LEFT JOIN locations l ON l.id = p.location_id
                  LEFT JOIN post_likes pl ON pl.post_id = p.id AND pl.user_id = #{userId}
-        WHERE p.id = #{postId}
+        WHERE p.id = #{postId} AND p.status = 'ACTIVE'
     </select>
 
     <!-- 직계 하위 게시글(댓글) 조회 -->
@@ -109,7 +109,7 @@
                  LEFT JOIN users u ON u.id = p.user_id
                  LEFT JOIN locations l ON l.id = p.location_id
                  LEFT JOIN post_likes pl ON pl.post_id = p.id AND pl.user_id = #{userId}
-        WHERE p.parent_id = #{postId}
+        WHERE p.parent_id = #{postId} AND p.status = 'ACTIVE'
         ORDER BY p.created_at ASC
     </select>
 

@@ -10,6 +10,7 @@ import com.emotionmap.business.profile.payload.ProfileMeResponse;
 import com.emotionmap.business.profile.payload.ProfileRequest;
 import com.emotionmap.business.profile.payload.ProfileResponse;
 import com.emotionmap.business.profile.payload.ProfileUpdateRequest;
+import com.emotionmap.business.users.payload.UserProfileResponse;
 import com.emotionmap.common.code.ErrorCode;
 import com.emotionmap.common.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -77,6 +78,25 @@ public class ProfileService {
                 user.getCreatedAt(),
                 emotionTags,
                 user.getLocationId(),
+                user.getSiDo(),
+                user.getSiGunGu()
+        );
+    }
+
+    public UserProfileResponse getUserProfile(Long targetUserId) {
+        UserVo user = userMapper.findById(targetUserId);
+
+        if (user == null || !user.isActive()) {
+            throw new BusinessException(ErrorCode.NOT_FIND_USER_INFO);
+        }
+
+        List<EmotionResponse> emotionTags = profilerMapper.findEmotionTagsByUserId(targetUserId);
+
+        return new UserProfileResponse(
+                user.getNickname(),
+                user.getBio(),
+                user.getProfileImageUrl(),
+                emotionTags,
                 user.getSiDo(),
                 user.getSiGunGu()
         );
