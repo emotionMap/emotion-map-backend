@@ -1,3 +1,12 @@
+### 가입 시 위치 설정 (필수, 최초 1회 / 이후 변경도 가능)
+PATCH {{baseUrl}}/users/me/location
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "locationId": 1
+}
+
 ### 회원 탈퇴
 DELETE {{baseUrl}}/users/me
 Authorization: Bearer {{accessToken}}
