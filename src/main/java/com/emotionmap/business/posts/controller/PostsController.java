@@ -1,6 +1,7 @@
 package com.emotionmap.business.posts.controller;
 
 import com.emotionmap.business.jwt.vo.JwtUser;
+import com.emotionmap.business.posts.payload.EmotionStatResponse;
 import com.emotionmap.business.posts.payload.PostCreateRequest;
 import com.emotionmap.business.posts.payload.PostDetailResponse;
 import com.emotionmap.business.posts.payload.PostListResponse;
@@ -27,11 +28,12 @@ public class PostsController {
     private final PostsService postService;
 
 
-    @Operation(summary = "포스트 리스트 조회")
+    @Operation(summary = "포스트 리스트 조회", description = "locationId 생략 시 내 계정 위치, 지정 시 그 지역으로 조회 (지도에서 지역 선택 시 사용)")
     @GetMapping
     public ResponseEntity<ApiResponse<List<PostListResponse>>> getPostList(@AuthenticationPrincipal JwtUser jwtUser
-            , @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
-        List<PostListResponse> response = postService.getPostList(page, size, jwtUser.getUserId(), null);
+            , @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size
+            , @RequestParam(required = false) Long locationId) {
+        List<PostListResponse> response = postService.getPostList(page, size, jwtUser.getUserId(), null, locationId);
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 
@@ -71,19 +73,18 @@ public class PostsController {
         return ResponseEntity.ok(ApiResponse.of(likeYN));
     }
 
-    @Operation(summary = "댓글 작성")
-    @PostMapping("/{postId}/comments")
-    public ResponseEntity<ApiResponse<Long>> createComment(@AuthenticationPrincipal JwtUser jwtUser,
-            @PathVariable Long postId, @RequestBody PostCreateRequest request) {
-        Long commentId = postService.createComment(postId, request, jwtUser.getUserId());
-        return ResponseEntity.ok(ApiResponse.of(commentId));
-    }
-
     @Operation(summary = "내가 작성한 포스트")
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<List<PostListResponse>>> myPosts(@AuthenticationPrincipal JwtUser jwtUser,
             @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(ApiResponse.of(postService.getMyPosts(page, size, jwtUser.getUserId())));
+    }
+
+    @Operation(summary = "마이페이지 - 개인 감정 통계", description = "최근 N일간(days) 내가 작성한 게시글의 감정 태그별 사용 횟수, 많이 쓴 순")
+    @GetMapping("/me/emotion-stats")
+    public ResponseEntity<ApiResponse<List<EmotionStatResponse>>> myEmotionStats(@AuthenticationPrincipal JwtUser jwtUser,
+            @RequestParam(defaultValue = "7") int days) {
+        return ResponseEntity.ok(ApiResponse.of(postService.getMyEmotionStats(jwtUser.getUserId(), days)));
     }
 
 }

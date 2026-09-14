@@ -1,5 +1,6 @@
 package com.emotionmap.business.posts.payload;
 
+import com.emotionmap.business.comments.payload.CommentResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,8 +14,8 @@ public class PostDetailResponse {
 
     @Schema(description = "현재 포스트 정보")
     private Post post;
-    @Schema(description = "직계 하위 포스트 목록")
-    private List<Post> children;
+    @Schema(description = "댓글 목록 (대댓글까지 중첩 트리로 포함)")
+    private List<CommentResponse> comments;
 
     @Getter
     @Setter
@@ -22,12 +23,8 @@ public class PostDetailResponse {
     public static class Post {
         @Schema(description = "포스트 아이디")
         private Long postId;
-        @Schema(description = "유저 아이디")
-        private Long userId;
-        @Schema(description = "닉네임")
+        @Schema(description = "이 스레드 내에서 부여된 익명 닉네임")
         private String nickname;
-        @Schema(description = "작성자 프로필 이미지 URL")
-        private String profileImageUrl;
         @Schema(description = "위치 아이디")
         private Long locationId;
         @Schema(description = "시/도")

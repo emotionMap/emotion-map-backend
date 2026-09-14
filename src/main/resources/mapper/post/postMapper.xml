@@ -6,9 +6,7 @@
     <select id="getPosts" resultType="PostListResponse">
         SELECT
             p.id AS post_id,
-            p.user_id,
-            u.nickname,
-            u.profile_image_url,
+            pan.nickname,
             p.location_id,
             l.si_do,
             l.si_gun_gu,
@@ -17,13 +15,13 @@
             CASE WHEN pl.user_id IS NULL THEN 'N' ELSE 'Y' END AS likeYN,
             CASE WHEN p.user_id = #{userId} THEN TRUE ELSE FALSE END AS isMine,
             (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) AS likeCount,
-            (SELECT COUNT(*) FROM posts WHERE parent_id = p.id) AS commentCount,
+            (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND status = 'ACTIVE') AS commentCount,
             p.status
         FROM posts p
-                 LEFT JOIN users u ON u.id = p.user_id
+                 LEFT JOIN post_anonymous_nickname pan ON pan.post_id = p.id AND pan.user_id = p.user_id
                  LEFT JOIN locations l ON l.id = p.location_id
                  LEFT JOIN post_likes pl ON pl.post_id = p.id AND pl.user_id = #{userId}
-        WHERE p.depth = 0 AND p.status = 'ACTIVE'
+        WHERE p.status = 'ACTIVE'
         <if test="filterUserId != null">
             AND p.user_id = #{filterUserId}
         </if>
@@ -68,9 +66,7 @@
     <select id="getPostDetail" resultType="com.emotionmap.business.posts.payload.PostDetailResponse$Post">
         SELECT
             p.id AS post_id,
-            p.user_id,
-            u.nickname,
-            u.profile_image_url,
+            pan.nickname,
             p.location_id,
             l.si_do,
             l.si_gun_gu,
@@ -79,38 +75,13 @@
             CASE WHEN pl.user_id IS NULL THEN 'N' ELSE 'Y' END AS likeYN,
             CASE WHEN p.user_id = #{userId} THEN TRUE ELSE FALSE END AS isMine,
             (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) AS likeCount,
-            (SELECT COUNT(*) FROM posts WHERE parent_id = p.id) AS commentCount,
+            (SELECT COUNT(*) FROM comments WHERE post_id = p.id AND status = 'ACTIVE') AS commentCount,
             p.status
         FROM posts p
-                 LEFT JOIN users u ON u.id = p.user_id
+                 LEFT JOIN post_anonymous_nickname pan ON pan.post_id = p.id AND pan.user_id = p.user_id
                  LEFT JOIN locations l ON l.id = p.location_id
                  LEFT JOIN post_likes pl ON pl.post_id = p.id AND pl.user_id = #{userId}
         WHERE p.id = #{postId} AND p.status = 'ACTIVE'
-    </select>
-
-    <!-- 직계 하위 게시글(댓글) 조회 -->
-    <select id="getPostChildren" resultType="com.emotionmap.business.posts.payload.PostDetailResponse$Post">
-        SELECT
-            p.id AS post_id,
-            p.user_id,
-            u.nickname,
-            u.profile_image_url,
-            p.location_id,
-            l.si_do,
-            l.si_gun_gu,
-            p.content,
-            p.created_at,
-            CASE WHEN pl.user_id IS NULL THEN 'N' ELSE 'Y' END AS likeYN,
-            CASE WHEN p.user_id = #{userId} THEN TRUE ELSE FALSE END AS isMine,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) AS likeCount,
-            (SELECT COUNT(*) FROM posts WHERE parent_id = p.id) AS commentCount,
-            p.status
-        FROM posts p
-                 LEFT JOIN users u ON u.id = p.user_id
-                 LEFT JOIN locations l ON l.id = p.location_id
-                 LEFT JOIN post_likes pl ON pl.post_id = p.id AND pl.user_id = #{userId}
-        WHERE p.parent_id = #{postId} AND p.status = 'ACTIVE'
-        ORDER BY p.created_at ASC
     </select>
 
     <!-- 포스트 소유자 조회 -->
@@ -138,19 +109,10 @@
         UPDATE posts SET status = 'DELETED' WHERE id = #{postId}
     </update>
 
-    <!-- 포스트/댓글 생성 -->
+    <!-- 포스트 생성 (게시글은 항상 최상위 - 댓글은 별도 comments 테이블) -->
     <insert id="insertPost" useGeneratedKeys="true" keyProperty="postId">
-        <choose>
-            <when test="parentId != null">
-                INSERT INTO posts (user_id, parent_id, content, depth)
-                SELECT #{userId}, #{parentId}, #{content}, depth + 1
-                FROM posts WHERE id = #{parentId}
-            </when>
-            <otherwise>
-                INSERT INTO posts (user_id, location_id, content, depth)
-                VALUES (#{userId}, #{locationId}, #{content}, 0)
-            </otherwise>
-        </choose>
+        INSERT INTO posts (user_id, location_id, content)
+        VALUES (#{userId}, #{locationId}, #{content})
     </insert>
 
     <!-- 좋아요 존재 여부 -->
@@ -176,5 +138,30 @@
             (#{postId}, #{emotionId})
         </foreach>
     </insert>
+
+    <!-- 게시글 내 익명 닉네임 조회 -->
+    <select id="findAnonymousNickname" resultType="String">
+        SELECT nickname FROM post_anonymous_nickname
+        WHERE post_id = #{postId} AND user_id = #{userId}
+    </select>
+
+    <!-- 게시글 내 익명 닉네임 배정 -->
+    <insert id="insertAnonymousNickname">
+        INSERT INTO post_anonymous_nickname (post_id, user_id, nickname)
+        VALUES (#{postId}, #{userId}, #{nickname})
+    </insert>
+
+    <!-- 마이페이지 - 개인 감정 통계 (기간 내 사용 횟수 내림차순) -->
+    <select id="getMyEmotionStats" resultType="EmotionStatResponse">
+        SELECT et.id, et.name, et.emoji, COUNT(*) AS count
+        FROM post_emotion_tag pet
+                 JOIN posts p ON p.id = pet.post_id
+                 JOIN emotion_tags et ON et.id = pet.emotion_id
+        WHERE p.user_id = #{userId}
+          AND p.status = 'ACTIVE'
+          AND p.created_at >= #{since}
+        GROUP BY et.id, et.name, et.emoji
+        ORDER BY count DESC, et.id ASC
+    </select>
 
 </mapper>

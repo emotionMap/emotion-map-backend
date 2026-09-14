@@ -4,6 +4,7 @@ import com.emotionmap.business.posts.payload.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -17,7 +18,6 @@ public interface PostsMapper {
 
     // 포스트 상세
     PostDetailResponse.Post getPostDetail(Long postId, Long userId);
-    List<PostDetailResponse.Post> getPostChildren(Long postId, Long userId);
 
     // 포스트 생성
     void insertPost(PostCreateRequest request);
@@ -35,4 +35,11 @@ public interface PostsMapper {
     boolean existsLike(@Param("postId") Long postId, @Param("userId") Long userId);
     void insertLike(@Param("postId") Long postId, @Param("userId") Long userId);
     void deleteLike(@Param("postId") Long postId, @Param("userId") Long userId);
+
+    // 게시글 단위 익명 닉네임
+    String findAnonymousNickname(@Param("postId") Long postId, @Param("userId") Long userId);
+    void insertAnonymousNickname(@Param("postId") Long postId, @Param("userId") Long userId, @Param("nickname") String nickname);
+
+    // 마이페이지 - 개인 감정 통계
+    List<EmotionStatResponse> getMyEmotionStats(@Param("userId") Long userId, @Param("since") LocalDateTime since);
 }

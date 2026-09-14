@@ -10,6 +10,14 @@ Authorization: Bearer {{accessToken}}
 GET {{baseUrl}}/posts/me?page=1&size=20
 Authorization: Bearer {{accessToken}}
 
+### 마이페이지 - 개인 감정 통계 (최근 7일)
+GET {{baseUrl}}/posts/me/emotion-stats?days=7
+Authorization: Bearer {{accessToken}}
+
+### 마이페이지 - 개인 감정 통계 (최근 30일)
+GET {{baseUrl}}/posts/me/emotion-stats?days=30
+Authorization: Bearer {{accessToken}}
+
 ### 포스트 생성
 POST {{baseUrl}}/posts
 Authorization: Bearer {{accessToken}}

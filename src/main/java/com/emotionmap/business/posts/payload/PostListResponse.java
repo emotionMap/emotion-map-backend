@@ -12,12 +12,8 @@ import java.util.List;
 public class PostListResponse {
     @Schema(description = "포스트 아이디")
     private Long postId;
-    @Schema(description = "유저 아이디")
-    private Long userId;
-    @Schema(description = "닉네임")
+    @Schema(description = "이 스레드 내에서 부여된 익명 닉네임")
     private String nickname;
-    @Schema(description = "작성자 프로필 이미지 URL")
-    private String profileImageUrl;
     @Schema(description = "위치 아이디")
     private Long locationId;
     @Schema(description = "시/도")

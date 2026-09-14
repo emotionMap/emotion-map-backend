@@ -2,6 +2,8 @@ package com.emotionmap.business.posts.service;
 
 import com.emotionmap.business.auth.mapper.UserMapper;
 import com.emotionmap.business.auth.vo.UserVo;
+import com.emotionmap.business.comments.payload.CommentResponse;
+import com.emotionmap.business.comments.service.CommentsService;
 import com.emotionmap.business.posts.mapper.PostsMapper;
 import com.emotionmap.business.posts.payload.*;
 import com.emotionmap.common.code.ErrorCode;
@@ -11,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -23,12 +26,23 @@ public class PostsService {
 
     private final PostsMapper postsMapper;
     private final UserMapper userMapper;
+    private final AnonymousNicknameService anonymousNicknameService;
+    private final CommentsService commentsService;
 
-    /**포스트 리스트 조회 - 메인 피드 (사용자 설정 위치 기준 필터)*/
-    public List<PostListResponse> getPostList(int page, int size, Long userId, Long filterUserId) {
-        UserVo user = userMapper.findById(userId);
-        Long locationId = user != null ? user.getLocationId() : null;
+    /**포스트 리스트 조회 - 메인 피드 (overrideLocationId 없으면 내 계정 위치, 있으면 그 지역 - 지도에서 지역 선택 시 사용)*/
+    public List<PostListResponse> getPostList(int page, int size, Long userId, Long filterUserId, Long overrideLocationId) {
+        Long locationId = overrideLocationId;
+        if (locationId == null) {
+            UserVo user = userMapper.findById(userId);
+            locationId = user != null ? user.getLocationId() : null;
+        }
         return fetchPosts(page, size, userId, filterUserId, locationId);
+    }
+
+    /**마이페이지 - 개인 감정 통계 (최근 N일간 사용 횟수, 많이 쓴 순)*/
+    public List<EmotionStatResponse> getMyEmotionStats(Long userId, int days) {
+        LocalDateTime since = LocalDateTime.now().minusDays(days);
+        return postsMapper.getMyEmotionStats(userId, since);
     }
 
     /**마이페이지 - 나의 글 리스트 (위치 필터 없음)*/
@@ -63,7 +77,7 @@ public class PostsService {
 
         return posts;
     }
-    /**포스트 상세 조회*/
+    /**포스트 상세 조회 - 댓글은 대댓글까지 전부 중첩 트리로 한 번에 포함*/
     public PostDetailResponse getPost(Long postId, Long userId) {
         PostDetailResponse.Post post = postsMapper.getPostDetail(postId, userId);
         if (post == null) {
@@ -75,26 +89,11 @@ public class PostsService {
         post.setImageList(images);
         post.setEmotionList(emotions);
 
-        List<PostDetailResponse.Post> children = postsMapper.getPostChildren(postId, userId);
-        if (!children.isEmpty()) {
-            List<Long> childIdList = children.stream()
-                    .map(PostDetailResponse.Post::getPostId)
-                    .toList();
-
-            Map<Long, List<Image>> imageMap = postsMapper.getPostsImage(childIdList).stream()
-                    .collect(Collectors.groupingBy(Image::getPostId));
-            Map<Long, List<Emotion>> emotionMap = postsMapper.getPostsEmotion(childIdList).stream()
-                    .collect(Collectors.groupingBy(Emotion::getPostId));
-
-            for (PostDetailResponse.Post child : children) {
-                child.setImageList(imageMap.getOrDefault(child.getPostId(), Collections.emptyList()));
-                child.setEmotionList(emotionMap.getOrDefault(child.getPostId(), Collections.emptyList()));
-            }
-        }
+        List<CommentResponse> comments = commentsService.getCommentTree(postId, userId);
 
         PostDetailResponse response = new PostDetailResponse();
         response.setPost(post);
-        response.setChildren(children);
+        response.setComments(comments);
         return response;
     }
 
@@ -107,6 +106,7 @@ public class PostsService {
         request.setUserId(userId);
         postsMapper.insertPost(request);
         postsMapper.insertPostEmotionTags(request.getPostId(), request.getEmotionIds());
+        anonymousNicknameService.getOrCreateNickname(request.getPostId(), userId);
         return request.getPostId();
     }
 
@@ -144,18 +144,6 @@ public class PostsService {
             postsMapper.insertLike(postId, userId);
             return "Y";
         }
-    }
-
-    /**댓글 작성*/
-    public Long createComment(Long parentId, PostCreateRequest request, Long userId) {
-        Long ownerId = postsMapper.selectPostUserId(parentId);
-        if (ownerId == null) {
-            throw new BusinessException(ErrorCode.POST_NOT_FOUND);
-        }
-        request.setUserId(userId);
-        request.setParentId(parentId);
-        postsMapper.insertPost(request);
-        return request.getPostId();
     }
 
     /**포스트 삭제*/
