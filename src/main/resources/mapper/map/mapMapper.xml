@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.emotionmap.business.map.mapper.MapMapper">
+
+    <!-- 지역별 최근 부착된 감정 태그 최대 5개 (게시글 단위가 아니라 태그 부착 기록 단위 - 같은 게시글에서 여러 개 나올 수 있음) -->
+    <select id="getRecentEmotionsByLocation" resultType="com.emotionmap.business.map.vo.MapEmotionRow">
+        SELECT location_id, si_do, si_gun_gu, post_id, emotion_id, emoji, name
+        FROM (
+            SELECT p.location_id,
+                   l.si_do,
+                   l.si_gun_gu,
+                   pet.post_id,
+                   et.id   AS emotion_id,
+                   et.emoji,
+                   et.name,
+                   ROW_NUMBER() OVER (PARTITION BY p.location_id ORDER BY p.created_at DESC, pet.emotion_id DESC) AS rn
+            FROM post_emotion_tag pet
+                     JOIN posts p ON p.id = pet.post_id AND p.status = 'ACTIVE'
+                     JOIN emotion_tags et ON et.id = pet.emotion_id
+                     JOIN locations l ON l.id = p.location_id
+        ) ranked
+        WHERE rn &lt;= 5
+        ORDER BY location_id, rn
+    </select>
+
+</mapper>

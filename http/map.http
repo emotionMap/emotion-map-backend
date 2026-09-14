@@ -1,0 +1,7 @@
+### 지역별 지도 요약 (지역마다 최근 부착된 감정 태그 최대 5개)
+GET {{baseUrl}}/map
+Authorization: Bearer {{accessToken}}
+
+### 특정 지역 피드 조회 (지도에서 지역 선택 시 - locationId로 override)
+GET {{baseUrl}}/posts?locationId=1&page=1&size=20
+Authorization: Bearer {{accessToken}}
