@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.emotionmap.business.comments.mapper.CommentsMapper">
+
+    <!-- 댓글/대댓글 작성 (parent_comment_id가 없으면 게시글에 바로 다는 최상위 댓글) -->
+    <insert id="insertComment" useGeneratedKeys="true" keyProperty="commentId">
+        INSERT INTO comments (post_id, parent_comment_id, user_id, content)
+        VALUES (#{postId}, #{parentCommentId}, #{userId}, #{content})
+    </insert>
+
+    <!-- 게시글의 전체 댓글(대댓글 포함) 평면 조회 - 부모가 항상 자식보다 먼저 생성되므로 created_at ASC 정렬만으로 트리 조립 가능 -->
+    <select id="getComments" resultType="com.emotionmap.business.comments.vo.CommentRow">
+        SELECT
+            c.id AS comment_id,
+            c.parent_comment_id,
+            pan.nickname,
+            c.content,
+            c.created_at,
+            CASE WHEN c.user_id = #{userId} THEN TRUE ELSE FALSE END AS isMine,
+            c.status
+        FROM comments c
+                 LEFT JOIN post_anonymous_nickname pan ON pan.post_id = c.post_id AND pan.user_id = c.user_id
+        WHERE c.post_id = #{postId}
+        ORDER BY c.created_at ASC
+    </select>
+
+    <select id="selectCommentUserId" resultType="Long">
+        SELECT user_id FROM comments WHERE id = #{commentId}
+    </select>
+
+    <select id="selectCommentPostId" resultType="Long">
+        SELECT post_id FROM comments WHERE id = #{commentId}
+    </select>
+
+    <update id="updateComment">
+        UPDATE comments
+        SET content = #{content}
+        WHERE id = #{commentId}
+    </update>
+
+    <update id="softDeleteComment">
+        UPDATE comments SET status = 'DELETED' WHERE id = #{commentId}
+    </update>
+
+</mapper>

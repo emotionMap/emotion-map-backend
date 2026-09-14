@@ -1,0 +1,31 @@
+### 댓글 작성 (게시글에 바로 다는 최상위 댓글)
+POST {{baseUrl}}/posts/1/comments
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "content": "댓글입니다"
+}
+
+### 대댓글 작성 (parentCommentId로 무제한 중첩 - 대댓글, 대대댓글, ...)
+POST {{baseUrl}}/posts/1/comments
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "content": "대댓글입니다",
+  "parentCommentId": 1
+}
+
+### 댓글 수정
+PATCH {{baseUrl}}/comments/1
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "content": "수정된 댓글 내용"
+}
+
+### 댓글 삭제 (soft delete - 대댓글은 트리에 그대로 남음)
+DELETE {{baseUrl}}/comments/1
+Authorization: Bearer {{accessToken}}
