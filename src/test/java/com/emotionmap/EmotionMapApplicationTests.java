@@ -1,34 +1,13 @@
 package com.emotionmap;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.web.client.RestTemplate;
 
 @SpringBootTest
 class EmotionMapApplicationTests {
-    @Autowired
-    RestTemplate restTemplate;
 
     @Test
-    void 카카오_API_실제_호출_확인() {
-//
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.setBearerAuth("실제_카카오_access_token");
-//        headers.setContentType(MediaType.APPLICATION_JSON);
-//
-//        HttpEntity<Void> request = new HttpEntity<>(headers);
-//
-//        ResponseEntity<KakaoUserResponse> response =
-//                restTemplate.exchange(
-//                        "https://kapi.kakao.com/v2/user/me",
-//                        HttpMethod.GET,
-//                        request,
-//                        KakaoUserResponse.class
-//                );
-//
-//        System.out.println(response.getStatusCode());
-//        System.out.println(response.getBody());
+    void contextLoads() {
     }
 
 }

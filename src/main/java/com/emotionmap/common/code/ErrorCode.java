@@ -11,17 +11,15 @@ public enum ErrorCode {
     /*4XX*/
     AUTH_REQUIRED(HttpStatus.UNAUTHORIZED, "AUTH_REQUIRED", "유효하지 않은 토큰입니다."),
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN", "유효하지 않은 리프레시 토큰입니다."),
-    KAKAO_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "KAKAO_AUTH_FAILED", "카카오 인증 실패입니다."),
-    NAVER_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "NAVER_AUTH_FAILED", "네이버 인증 실패입니다."),
-    APPLE_AUTH_FAILED(HttpStatus.UNAUTHORIZED, "APPLE_AUTH_FAILED", "애플 인증 실패입니다."),
+    INVALID_LOGIN_REQUEST(HttpStatus.BAD_REQUEST, "INVALID_LOGIN_REQUEST", "deviceId는 필수입니다."),
     NOT_FIND_USER_INFO(HttpStatus.NOT_ACCEPTABLE, "NOT_FIND_USER_INFO", "사용자 정보를 찾을 수 없습니다."),
-    EXAMPLE0(HttpStatus.NOT_ACCEPTABLE, "NOT_FIND_USER_INFO", "이미 가입된 사용자입니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_NOT_FOUND", "존재하지 않는 게시글입니다."),
     INVALID_POST_REQUEST(HttpStatus.BAD_REQUEST, "INVALID_POST_REQUEST", "위치와 감정 태그는 필수입니다."),
-    FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "해당 게시글에 대한 권한이 없습니다."),
-    EMOTION_TAG_REQUIRED(HttpStatus.BAD_REQUEST, "EMOTION_TAG_REQUIRED", "감정 태그는 최소 1개 이상 선택해야 합니다."),
-    EMOTION_TAG_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "EMOTION_TAG_LIMIT_EXCEEDED", "감정 태그는 최대 5개까지 선택할 수 있습니다."),
-    LOCATION_REQUIRED(HttpStatus.BAD_REQUEST, "LOCATION_REQUIRED", "위치는 필수입니다.")
+    FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "해당 리소스에 대한 권한이 없습니다."),
+    LOCATION_REQUIRED(HttpStatus.BAD_REQUEST, "LOCATION_REQUIRED", "위치는 필수입니다."),
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "COMMENT_NOT_FOUND", "존재하지 않는 댓글입니다."),
+    INVALID_COMMENT_REQUEST(HttpStatus.BAD_REQUEST, "INVALID_COMMENT_REQUEST", "댓글 내용은 필수입니다."),
+    NOT_FOUND(HttpStatus.NOT_FOUND, "NOT_FOUND", "존재하지 않는 요청입니다.")
 
     /*5XX*/,
     DB_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "DB_ERROR", "데이터 처리 중 오류가 발생했습니다."),

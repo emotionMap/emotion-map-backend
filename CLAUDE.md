@@ -32,23 +32,24 @@ The active Spring profile defaults to `local`. To switch: `./gradlew bootRun --a
 ```
 com.emotionmap
 ├── business/
-│   ├── auth/          # 소셜 로그인 (Kakao, Naver, Apple) + JWT 발급
+│   ├── auth/          # 기기 식별자(deviceId) 기반 익명 로그인 + JWT 발급 (본인인증 없음)
 │   │   ├── controller/    # AuthController → /auth
 │   │   ├── mapper/        # UserMapper
 │   │   ├── payload/       # AuthLoginRequest/Response, AuthRefreshRequest
-│   │   ├── service/       # AuthService, SocialAuthService, KakaoAuthClient, NaverAuthClient, AppleAuthClient
-│   │   └── vo/            # UserVo, UserStatusVo, JWTToken, SocialUserInfoVo
+│   │   ├── service/       # AuthService
+│   │   └── vo/            # UserVo, JWTToken
 │   ├── jwt/               # JwtProvider, JwtAuthenticationFilter, JwtUser
-│   ├── posts/             # 게시글 CRUD + 좋아요 + 댓글
+│   ├── posts/             # 게시글 CRUD + 좋아요 + 게시글 단위 익명 닉네임 (게시글은 항상 최상위, 댓글은 별도 도메인)
 │   │   ├── controller/    # PostsController → /posts
 │   │   ├── mapper/        # PostsMapper
 │   │   ├── payload/       # PostListResponse, PostDetailResponse, PostCreateRequest, PostUpdateRequest, Image, Emotion, Status
-│   │   └── service/       # PostsService
-│   ├── profile/           # 프로필 등록 및 관리 (소셜 로그인 후속 단계)
-│   │   ├── controller/    # ProfileController → /profile
-│   │   ├── mapper/        # ProfilerMapper
-│   │   ├── payload/       # ProfileRequest, ProfileUpdateRequest, ProfileResponse, ProfileMeResponse
-│   │   └── service/       # ProfileService
+│   │   └── service/       # PostsService, AnonymousNicknameService
+│   ├── comments/          # 댓글 (대댓글 무제한 중첩)
+│   │   ├── controller/    # CommentsController → POST /posts/{postId}/comments, /comments/{commentId}
+│   │   ├── mapper/        # CommentsMapper
+│   │   ├── payload/       # CommentCreateRequest/UpdateRequest/Response
+│   │   ├── service/       # CommentsService (평면 조회 → Java에서 트리 조립)
+│   │   └── vo/            # CommentRow (DB 평면 조회용)
 │   ├── emotion/           # 감정 태그 목록 조회
 │   │   ├── controller/    # EmotionController → /emotion  ← 서비스 없이 mapper 직접 호출
 │   │   ├── mapper/        # EmotionMapper
@@ -57,10 +58,18 @@ com.emotionmap
 │   │   ├── controller/    # LocationController → /location  ← 서비스 없이 mapper 직접 호출
 │   │   ├── mapper/        # LocationMapper
 │   │   └── payload/       # SigunguResponse
-│   └── users/             # 사용자 관리 (탈퇴만)
-│       └── controller/    # UserController → /users  ← ProfileService 위임
+│   ├── users/             # 사용자 관리 (가입 시 위치 설정 + 탈퇴)
+│   │   ├── controller/    # UserController → /users
+│   │   ├── payload/       # LocationUpdateRequest
+│   │   └── service/       # UserService
+│   └── map/               # 지역별 지도 요약 (순수 조회/집계, 스키마 변경 없음)
+│       ├── controller/    # MapController → /map
+│       ├── mapper/        # MapMapper (윈도우 함수로 지역별 최근 5개 조회)
+│       ├── payload/       # MapRegionResponse
+│       ├── service/       # MapService (평면 조회 → Java에서 지역별 그룹핑)
+│       └── vo/            # MapEmotionRow
 ├── common/
-│   ├── config/        # SecurityConfig, S3Config, SwaggerConfig, RestTemplateConfig
+│   ├── config/        # SecurityConfig, S3Config, SwaggerConfig
 │   ├── code/          # ErrorCode enum
 │   ├── exception/     # GlobalExceptionHandler, BusinessException
 │   └── payload/       # ApiResponse<T>, ErrorResponse
@@ -71,41 +80,44 @@ com.emotionmap
 
 | 메서드 | URL | 설명 | 인증 |
 |---|---|---|---|
-| POST | /auth/login | 소셜 로그인 (provider: kakao/naver/apple) | 불필요 |
+| POST | /auth/login | 익명 로그인 (deviceId 기반, 본인인증 없음) | 불필요 |
 | POST | /auth/refresh | 액세스 토큰 갱신 (리프레시 토큰 사용) | 불필요 |
 | POST | /auth/logout | 로그아웃 (리프레시 토큰 무효화) | 필요 |
-| POST | /profile/create | 프로필 등록 (UNREGISTERED → REGISTERED) | 필요 |
-| GET | /profile/me | 내 프로필 조회 | 필요 |
-| PATCH | /profile/me | 내 프로필 수정 | 필요 |
-| GET | /users/{userId} | 타 사용자 프로필 조회 (REGISTERED 유저만) | 필요 |
+| PATCH | /users/me/location | 가입 시 위치 설정 (필수, 최초 1회 / 이후 변경 가능) | 필요 |
 | DELETE | /users/me | 회원 탈퇴 | 필요 |
-| GET | /posts | 게시글 목록 (사용자 위치 기반 자동 필터) | 필요 |
+| GET | /map | 지역별 지도 요약 (지역마다 최근 부착된 감정 태그 최대 5개, 게시글 없는 지역은 제외) | 필요 |
+| GET | /posts | 게시글 목록 (`locationId` 생략 시 내 계정 위치, 지정 시 그 지역 - 지도에서 지역 선택 시 사용) | 필요 |
 | GET | /posts/me | 내 게시글 목록 | 필요 |
-| GET | /posts/{postId} | 게시글 상세 (댓글 포함) | 필요 |
+| GET | /posts/me/emotion-stats?days= | 마이페이지 개인 감정 통계 (최근 N일간 감정 태그별 사용 횟수, 많이 쓴 순, 기본 7일) | 필요 |
+| GET | /posts/{postId} | 게시글 상세 (댓글을 대댓글까지 중첩 트리로 한 번에 포함) | 필요 |
 | POST | /posts | 게시글 생성 | 필요 |
 | PATCH | /posts/{postId} | 게시글 수정 | 필요 |
 | DELETE | /posts/{postId} | 게시글 삭제 (soft delete) | 필요 |
 | POST | /posts/{postId}/like | 좋아요 토글 | 필요 |
-| POST | /posts/{postId}/comments | 댓글 작성 | 필요 |
+| POST | /posts/{postId}/comments | 댓글/대댓글 작성 (`parentCommentId`로 무제한 중첩) | 필요 |
+| PATCH | /comments/{commentId} | 댓글 수정 | 필요 |
+| DELETE | /comments/{commentId} | 댓글 삭제 (soft delete, 대댓글은 유지) | 필요 |
 | GET | /emotion | 감정 태그 목록 | 필요 |
 | GET | /location/sido | 시/도 목록 | 불필요 |
 | GET | /location/sigungu?siDo= | 시/군/구 목록 | 불필요 |
 
 ### Request lifecycle
 
-1. `JwtAuthenticationFilter`가 `Authorization: Bearer <token>`을 검증하고, `JwtUser` (userId, status)를 Spring Security principal로 설정한다.
+1. `JwtAuthenticationFilter`가 `Authorization: Bearer <token>`을 검증하고, `JwtUser` (userId, locationSet)를 Spring Security principal로 설정한다.
    - 필터 제외 경로: `/auth/**`, `/swagger-ui/**`, `/v3/api-docs/**`, `/test/**`
    - `SecurityConfig`는 `.anyRequest().permitAll()`로 설정되어 있으나, 실질적 인증은 JwtAuthenticationFilter가 담당한다. 필터를 통과하지 못하면 컨트롤러에서 `@AuthenticationPrincipal`이 null이 되어 NPE가 발생한다.
+   - `locationSet=false`인 토큰은 `PATCH /users/me/location`, `DELETE /users/me` 외의 모든 경로에서 `403 LOCATION_REQUIRED`로 막힌다.
 2. Controllers extract the principal via `@AuthenticationPrincipal JwtUser jwtUser`.
 3. Services call MyBatis mapper interfaces; mapper XML lives under `src/main/resources/mapper/`.
 4. All responses are wrapped in `ApiResponse<T>` (`{ "data": ... }`); errors go through `GlobalExceptionHandler` → `ErrorResponse`.
 
 ### Auth flow
 
-- Social login hits `AuthController` → `SocialAuthService` delegates to provider-specific client (Kakao/Naver/Apple).
-- On success, `JwtProvider` issues an access token (30 min, claims: `userId`, `status`) and a refresh token (14 days, subject = userId).
+- 본인인증 없는 익명 로그인이다. 클라이언트가 기기별로 생성해 보관하는 `deviceId`를 `POST /auth/login`으로 보내면, `AuthService.login`이 `UserMapper.findByDeviceId`로 기존 계정을 찾거나 `UserVo.newAnonymousUser`로 새 계정을 만든다. 소셜 제공자 검증 단계가 전혀 없다 — 같은 deviceId면 항상 같은 계정으로 로그인된다.
+- `JwtProvider`가 access token (30 min, claims: `userId`, `locationSet`)과 refresh token (90 days, subject = userId)을 발급한다.
 - 리프레시 토큰은 DB (`users.refresh_token`, `users.refresh_token_expires_at`)에 저장된다. 갱신 요청 시 DB 값과 대조 검증.
-- New users have `status = UNREGISTERED` and must complete profile registration via `ProfileController` before accessing other features.
+- 신규 유저는 `users.location_id`가 NULL이라 토큰의 `locationSet`이 `false`로 발급되며, `PATCH /users/me/location` 호출 전까지는 위치 설정/탈퇴 외의 API를 쓸 수 없다. 위치를 설정하면 `locationSet=true`가 반영된 새 토큰을 즉시 재발급한다 (`UserService.setLocation` → `AuthService.issueAndSaveTokens` 재사용).
+- 프로필(닉네임/자기소개/사진) 개념 자체가 없다 — 완전 익명 게시판이며, 게시글 작성 시 부여되는 닉네임은 계정에 저장되지 않고 스레드 단위로만 존재한다 (아래 Business rules 참고).
 - 로그아웃 시 DB의 `refresh_token`, `refresh_token_expires_at`을 NULL로 초기화한다.
 
 ### MyBatis conventions
@@ -121,13 +133,16 @@ com.emotionmap
 ### Business rules
 
 - **게시글 생성 필수값**: `locationId`, `emotionIds` (비어있으면 `INVALID_POST_REQUEST`)
-- **게시글/댓글 구분 없음**: posts 테이블 하나로 모두 표현한다. `parent_id = null`이면 루트 게시글, `parent_id`가 있으면 하위 게시글이다. "댓글" 개념이 아니라 **하위 게시글 진입** 구조 — 하위 게시글을 클릭하면 그 게시글을 루트로 하는 새 화면으로 진입하고, 거기서 또 하위 게시글을 작성할 수 있다. 중첩 렌더링(대댓글)은 없다. 항상 "현재 게시글 + 직계 하위 게시글" 구조이므로 재귀 조회가 필요 없다.
-- **하위 게시글 생성**: `POST /posts/{postId}/comments` — 내부적으로 `insertPost`를 재사용하며 `parentId`를 설정. `depth`는 DB에서 부모의 `depth + 1`로 자동 계산됨.
+- **게시글/댓글은 완전히 분리된 개념**이다. `posts`는 항상 최상위 글이며 다른 글의 하위가 될 수 없다. 댓글은 별도 `comments` 테이블에서 `parent_comment_id`로 자기참조하며 **댓글 → 대댓글 → 대대댓글 → ...로 깊이 제한 없이** 중첩된다.
+- **댓글/대댓글 작성**: `POST /posts/{postId}/comments`, body의 `parentCommentId`가 없으면 게시글에 바로 다는 최상위 댓글, 있으면 그 댓글의 대댓글. 게시글 상세 조회(`GET /posts/{postId}`) 1번으로 그 글의 **전체 댓글 트리(대댓글 포함)를 한 번에** 내려준다 — `CommentsMapper.getComments`로 평면 조회 후 `CommentsService.getCommentTree`가 Java에서 2-pass로 트리를 조립한다 (부모가 항상 자식보다 먼저 생성되므로 재귀 쿼리 불필요).
+- **댓글 삭제**: soft delete — 삭제된 댓글도 트리에는 남고(`status='DELETED'`), 그 아래 대댓글은 그대로 유지된다.
 - **게시글 삭제**: soft delete — `status = 'DELETED'` 업데이트, DB에서 실제 삭제하지 않음.
-- **좋아요 토글**: 반환값 `"Y"` (좋아요 추가) / `"N"` (취소).
-- **피드 조회 위치 필터**: 사용자의 `users.location_id`로 자동 필터링. location이 없으면 전체 조회.
-- **감정 태그 (프로필)**: 최소 1개, 최대 5개 제한 (애플리케이션 레이어 검증).
-- **권한 검사**: 수정/삭제 시 `posts.user_id`와 요청자 userId 비교. 불일치 시 `FORBIDDEN`.
+- **좋아요 토글**: 반환값 `"Y"` (좋아요 추가) / `"N"` (취소). 댓글에는 좋아요 없음.
+- **개인 감정 통계**: `GET /posts/me/emotion-stats?days=`로 최근 N일간 본인이 작성한 게시글의 감정 태그별 사용 횟수를 많이 쓴 순으로 보여준다 (마이페이지 상단 버튼용). 댓글은 감정 태그가 없어 집계 대상이 아니다.
+- **피드 조회 위치 필터**: `GET /posts`에 `locationId`를 생략하면 `users.location_id`(내 계정 위치)로 자동 필터링, 지정하면 그 지역으로 override — 지도에서 다른 지역을 선택해 둘러볼 때 쓰인다.
+- **지도 지역별 요약**: `GET /map`은 지역(시/군/구)마다 "최근 부착된 감정 태그" 최대 5개를 보여준다. 게시글 단위가 아니라 태그 부착 기록 단위라 한 게시글에서 여러 개가 나올 수 있다 (`MapMapper`가 윈도우 함수로 지역별 상위 5개를 뽑고 `MapService`가 Java에서 그룹핑). 게시글이 없는 지역은 응답에서 제외된다. 스키마 변경 없는 순수 조회 기능이다.
+- **익명 닉네임 (완전 익명 게시판)**: 프로필/타 사용자 조회 개념이 없다. 게시글이든 그 아래 몇 단계 대댓글이든, 작성 시 `AnonymousNicknameService`가 **게시글(postId) 단위**로 닉네임을 자동 배정해 `post_anonymous_nickname`에 저장한다. **같은 게시글 안에서는 같은 유저 = 항상 같은 닉네임**, **다른 게시글에서는 같은 유저라도 다른 닉네임**이 나온다. 응답에는 `userId`/`profileImageUrl`을 내려주지 않는다 (계정 식별자가 노출되면 게시글 간 익명성이 클라이언트에서 깨질 수 있음).
+- **권한 검사**: 게시글/댓글 수정·삭제 시 각각 `posts.user_id`/`comments.user_id`와 요청자 userId 비교. 불일치 시 `FORBIDDEN`.
 - **회원 탈퇴**: `users` 레코드 완전 삭제 (ON DELETE CASCADE로 관련 데이터 자동 삭제).
 
 ### Common coding patterns
@@ -156,7 +171,9 @@ if (!ownerId.equals(userId)) throw new BusinessException(ErrorCode.FORBIDDEN);
 
 ### Key domain relationships
 
-- `posts` → `post_images` (one-to-many), `post_emotion_tag` → `emotion_tags` (many-to-many), `post_likes`
+- `posts` → `post_images` (one-to-many), `post_emotion_tag` → `emotion_tags` (many-to-many), `post_likes`, `comments` (모두 ON DELETE CASCADE).
+- `comments.parent_comment_id`: 자기참조로 무제한 중첩 (댓글/대댓글/대대댓글/...). `NULL`이면 게시글에 바로 단 최상위 댓글.
+- `post_anonymous_nickname` (post_id, user_id) → nickname: 게시글별 익명 닉네임 배정 테이블. `post_anonymous_nickname.post_id`, `.user_id`가 복합 PK. 게시글 작성자든 그 아래 어느 깊이의 댓글 작성자든 같은 `post_id` 기준으로 조회/배정된다.
 - Post list queries join images and emotions into `PostListResponse.imageList` and `PostListResponse.emotionList`.
 
 ### Environment config
@@ -203,12 +220,19 @@ Available at `http://localhost:8080/swagger-ui/index.html` when running locally.
 > 상세 테이블 컬럼 및 관계 다이어그램: [docs/entity-summary.md](docs/entity-summary.md)
 
 ### User
-- 소셜 로그인(Kakao / Naver / Apple)으로 생성되며, provider + provider_user_id로 식별한다.
-- status: UNREGISTERED → REGISTERED (프로필 등록 시 전환)
+- 본인인증(소셜 로그인 등) 없이, 클라이언트가 기기별로 생성해 보관하는 `device_id`로만 식별하는 완전 익명 계정이다. 앱을 지우고 새 deviceId로 다시 로그인하면 이전 계정과의 연결은 끊어진다.
+- 프로필(닉네임/자기소개/사진) 개념이 없는 완전 익명 게시판이다. 가입 직후 필요한 건 위치(location) 설정 하나뿐이며, 설정 전에는 `PATCH /users/me/location`과 회원 탈퇴 외의 API를 쓸 수 없다.
+- 타 사용자 프로필을 조회하는 API 자체가 없다. 본인 게시글은 `GET /posts/me`(마이페이지)로만 확인 가능.
 
 ### Post
-- 본문(content), 감정 태그(N개), 이미지(N개), 위치(1개)를 포함한다.
-- 댓글은 별도 테이블 없이 posts.parent_id + depth 로 계층 표현한다.
+- 본문(content), 감정 태그(N개), 이미지(N개), 위치(1개)를 포함한다. 항상 최상위 글이며 다른 글의 하위가 될 수 없다.
+- 작성자 표시는 실제 계정이 아니라 게시글 단위로 배정되는 익명 닉네임이다 — 같은 게시글(그 아래 댓글 포함) 안에서는 같은 유저가 항상 같은 닉네임으로 보이고, 다른 게시글에서는 다른 닉네임으로 보인다.
+
+### Comment
+- 게시글에 종속되며(`comments.post_id`), `parent_comment_id`로 자기참조해 **댓글 → 대댓글 → 대대댓글 → ...로 깊이 제한 없이** 중첩된다.
+- 위치/감정 태그가 없다 — `content`만 필수.
+- 게시글 상세 조회 1번으로 전체 댓글 트리가 한 번에 내려온다 (화면 전환 없이 한눈에 보이는 구조).
+- soft delete — 삭제돼도 대댓글은 트리에 그대로 남는다.
 
 ### Emotion
 - 게시글에 선택되는 감정 태그 (emotion_tags 테이블)
@@ -225,4 +249,6 @@ Available at `http://localhost:8080/swagger-ui/index.html` when running locally.
 - posts.location_id는 구 단위 locations.id를 참조한다.
 
 ### Map
-- 위치 데이터 기반으로 게시글을 지도 위에 표시한다.
+- `GET /map`으로 지역(시/군/구)별 요약을 제공한다: 지역마다 최근 부착된 감정 태그 최대 5개(게시글 단위 아님, 태그 부착 기록 단위). 게시글이 하나도 없는 지역은 제외된다.
+- 지역을 선택했을 때의 "그 지역 피드"는 별도 API가 아니라 `GET /posts?locationId=`로 기존 피드를 재사용한다.
+- DB 스키마 변경 없이 `posts`/`post_emotion_tag`/`locations`를 조합한 순수 조회 기능이다.

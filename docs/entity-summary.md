@@ -4,15 +4,18 @@
 
 ```
 users ──── locations (location_id)
- ├─< posts (user_id)
- │      └─< post_images      (post_id)
- │      └─< post_emotion_tag (post_id) >─ emotion_tags
- │      └─< post_likes       (post_id, user_id)
- │      └── locations         (location_id)
- └─< user_emotion_tag (user_id) >─ emotion_tags
+ └─< posts (user_id)
+        └─< post_images            (post_id)
+        └─< post_emotion_tag       (post_id) >─ emotion_tags
+        └─< post_likes             (post_id, user_id)
+        └─< post_anonymous_nickname (post_id, user_id)
+        └─< comments               (post_id)
+               └─< comments (self)  (parent_comment_id)  -- 대댓글, 무제한 중첩
+        └── locations               (location_id)
 ```
 
-- `posts.parent_id` + `posts.depth` 로 댓글 계층 표현 (별도 댓글 테이블 없음)
+- 게시글과 댓글은 완전히 분리된 테이블이다. `posts`는 항상 최상위 글이고, 댓글은 `comments`가 전담하며 `parent_comment_id`로 자기참조해 **댓글 → 대댓글 → 대대댓글 → ...로 깊이 제한 없이** 중첩된다.
+- 프로필 개념이 없는 완전 익명 게시판이다 — `post_anonymous_nickname`이 (게시글, 유저) 조합별로 무작위 닉네임을 저장한다. 게시글 작성자든 그 아래 어느 깊이의 댓글 작성자든 같은 `post_id` 기준으로 조회/배정된다. `user_emotion_tag`(프로필용 감정 태그) 테이블은 프로필 제거와 함께 삭제됨.
 
 ---
 
@@ -23,20 +26,15 @@ users ──── locations (location_id)
 | 컬럼 | Java 필드 | DB 타입 | 설명 |
 |---|---|---|---|
 | id | id | bigint AUTO_INCREMENT | PK |
-| provider | provider | enum('kakao','naver') NOT NULL | 소셜 제공자 |
-| provider_user_id | providerUserId | varchar(100) NOT NULL | 제공자 측 사용자 ID |
-| nickname | nickname | varchar(50) NULL | 닉네임 |
-| bio | bio | varchar(255) NULL | 자기소개 |
-| profile_image_url | profileImageUrl | varchar(300) NULL | 프로필 이미지 URL |
-| status | status | enum('REGISTERED','UNREGISTERED') NULL | 회원 상태 |
-| location_id | locationId | int NULL | FK → locations.id (프로필 등록 시 설정, 설정에서 변경 가능) |
+| device_id | deviceId | varchar(64) NOT NULL | 클라이언트가 기기별로 생성해 보관하는 익명 식별자 (본인인증 없음) |
+| location_id | locationId | int NULL | FK → locations.id (가입 시 설정 필수, 이후 변경 가능). NULL이면 위치 설정/탈퇴 외 API 사용 불가 |
 | refresh_token | refreshToken | varchar NULL | 리프레시 토큰 값 |
 | refresh_token_expires_at | refreshTokenExpiresAt | datetime NULL | 리프레시 토큰 만료 일시 |
 | last_login_at | lastLoginAt | datetime NULL | 마지막 로그인 일시 |
 | created_at | createdAt | datetime NOT NULL DEFAULT CURRENT_TIMESTAMP | 생성 일시 |
 | updated_at | updatedAt | datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 수정 일시 |
 
-> (provider, provider_user_id) UNIQUE — 동일 제공자의 중복 가입 방지
+> device_id UNIQUE — 같은 기기는 항상 같은 계정으로 로그인
 
 ---
 
@@ -45,8 +43,6 @@ users ──── locations (location_id)
 | 컬럼 | Java 필드 | DB 타입 | 설명 |
 |---|---|---|---|
 | id | postId | bigint AUTO_INCREMENT | PK |
-| parent_id | parentId | bigint NULL | FK → posts.id (self, ON DELETE CASCADE), null이면 루트 게시글 |
-| depth | depth | tinyint NOT NULL DEFAULT 0 | 댓글 깊이 (0: 게시글, 1+: 댓글) |
 | user_id | userId | bigint NOT NULL | FK → users.id (ON DELETE CASCADE) |
 | location_id | locationId | int NULL | FK → locations.id |
 | content | content | text NULL | 본문 |
@@ -88,6 +84,23 @@ users ──── locations (location_id)
 
 ---
 
+### comments
+
+댓글 전용 테이블. `parent_comment_id`로 자기참조해 댓글/대댓글/대대댓글/... 깊이 제한 없이 중첩된다. 위치/감정 태그는 없다.
+
+| 컬럼 | Java 필드 | DB 타입 | 설명 |
+|---|---|---|---|
+| id | commentId | bigint AUTO_INCREMENT | PK |
+| post_id | - | bigint NOT NULL | FK → posts.id (ON DELETE CASCADE) |
+| parent_comment_id | parentCommentId | bigint NULL | FK → comments.id (self, ON DELETE CASCADE), null이면 게시글에 바로 단 최상위 댓글 |
+| user_id | - | bigint NOT NULL | FK → users.id (ON DELETE CASCADE) |
+| content | content | text NOT NULL | 내용 |
+| status | status | varchar(20) NOT NULL DEFAULT 'ACTIVE' | ACTIVE / DELETED (soft delete, 삭제돼도 대댓글은 유지) |
+| created_at | createdAt | datetime NOT NULL DEFAULT CURRENT_TIMESTAMP | 생성 일시 |
+| updated_at | updatedAt | datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | 수정 일시 |
+
+---
+
 ### post_emotion_tag
 
 | 컬럼 | DB 타입 | 설명 |
@@ -110,14 +123,18 @@ users ──── locations (location_id)
 
 ---
 
-### user_emotion_tag
+### post_anonymous_nickname
 
-유저 프로필에 표시할 감정 상태 태그 (최대 5개). 5개 제한은 애플리케이션 레이어에서 검증한다.
+게시글별로 유저에게 배정된 익명 닉네임. 게시글 본문이든 그 아래 어느 깊이의 댓글이든, 같은 post_id 안에서는 같은 user_id가 항상 같은 nickname을 받는다.
 
 | 컬럼 | DB 타입 | 설명 |
 |---|---|---|
+| post_id | bigint NOT NULL | PK (복합), FK → posts.id (ON DELETE CASCADE) |
 | user_id | bigint NOT NULL | PK (복합), FK → users.id (ON DELETE CASCADE) |
-| emotion_id | int NOT NULL | PK (복합), FK → emotion_tags.id (ON DELETE RESTRICT) |
+| nickname | varchar(50) NOT NULL | 형용사+명사 조합으로 무작위 생성 (예: "포근한 펭귄") |
+| created_at | datetime NOT NULL DEFAULT CURRENT_TIMESTAMP | 생성 일시 |
+
+> (post_id, nickname) UNIQUE — 같은 게시글 안에서 닉네임 중복 방지
 
 ---
 
@@ -127,10 +144,14 @@ users ──── locations (location_id)
 |---|---|---|
 | `UserVo` | `auth/vo/` | users |
 | `JwtUser` | `jwt/vo/` | users (JWT 클레임) |
-| `PostListResponse` | `posts/payload/` | posts + join |
-| `PostDetailResponse` | `posts/payload/` | posts + join (댓글 포함) |
+| `PostListResponse` | `posts/payload/` | posts + post_anonymous_nickname + join |
+| `PostDetailResponse` | `posts/payload/` | posts + post_anonymous_nickname + join |
 | `Image` | `posts/payload/` | post_images |
 | `Emotion` | `posts/payload/` | post_emotion_tag + emotion_tags |
 | `EmotionResponse` | `emotion/payload/` | emotion_tags |
 | `SigunguResponse` | `location/payload/` | locations |
-| `ProfileMeResponse` | `profile/payload/` | users + user_emotion_tag + locations |
+| `LocationUpdateRequest` | `users/payload/` | users.location_id |
+| `AnonymousNicknameService` | `posts/service/` | post_anonymous_nickname |
+| `CommentResponse` / `CommentRow` | `comments/payload,vo/` | comments + post_anonymous_nickname (중첩 트리로 조립) |
+| `MapRegionResponse` / `MapEmotionRow` | `map/payload,vo/` | post_emotion_tag + posts + locations (지역별 최근 5개, 스키마 변경 없음) |
+| `EmotionStatResponse` | `posts/payload/` | post_emotion_tag + posts + emotion_tags (마이페이지 개인 감정 통계, 기간 집계) |
