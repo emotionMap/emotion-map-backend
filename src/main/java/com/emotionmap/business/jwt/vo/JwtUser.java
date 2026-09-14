@@ -8,6 +8,6 @@ import lombok.Getter;
 public class JwtUser {
 
     private final Long userId;
-    private final String status;
+    private final boolean locationSet;
 //  iat/exp는 parse 메서드에서 검증됨
 }

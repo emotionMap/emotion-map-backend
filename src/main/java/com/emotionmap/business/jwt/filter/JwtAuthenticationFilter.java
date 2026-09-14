@@ -38,7 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     || path.startsWith("/test/")
                     || path.startsWith("/v3/api-docs")
                     || path.startsWith("/swagger-ui")
-                    || path.startsWith("/emotion")) {
+                    || path.startsWith("/location/")) {
                 filterChain.doFilter(request, response);
                 return;
             }
@@ -57,15 +57,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Claims claims = jwtProvider.parse(token);
 
                 Long userId = claims.get("userId", Long.class);
-                String status = claims.get("status", String.class);
+                boolean locationSet = Boolean.TRUE.equals(claims.get("locationSet", Boolean.class));
 
-                // UNREGISTERED 토큰은 /profile/create 만 허용
-                if ("UNREGISTERED".equals(status) && !"/profile/create".equals(path)) {
-                    sendUnauthorized(response);
+                // 위치 미설정 유저는 위치 설정 / 회원 탈퇴만 허용
+                if (!locationSet
+                        && !("/users/me/location".equals(path) || "/users/me".equals(path))) {
+                    sendLocationRequired(response);
                     return;
                 }
 
-                JwtUser principal = new JwtUser(userId, status);
+                JwtUser principal = new JwtUser(userId, locationSet);
 
                 // Spring Security에 사용자 등록
                 Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, List.of());
@@ -93,5 +94,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write("{\"code\":\"AUTH_REQUIRED\",\"message\":\"인증이 필요합니다.\"}");
+    }
+
+    private void sendLocationRequired(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"code\":\"LOCATION_REQUIRED\",\"message\":\"위치 설정이 필요합니다.\"}");
     }
 }

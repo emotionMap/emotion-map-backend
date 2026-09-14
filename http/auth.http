@@ -1,4 +1,4 @@
-### [테스트용] 토큰 발급 (userId=1 로 REGISTERED 유저 토큰 즉시 발급)
+### [테스트용] 토큰 발급 (userId=1, DB의 실제 location_id 여부가 토큰의 locationSet에 반영됨)
 POST {{baseUrl}}/test/test-login?userId=1
 
 > {%
@@ -7,13 +7,12 @@ POST {{baseUrl}}/test/test-login?userId=1
 
 ###
 
-### 로그인 (카카오/네이버/애플)
+### 로그인 (deviceId 기반 익명 로그인, 본인인증 없음 - 없는 deviceId면 새 계정 생성)
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "provider": "kakao",
-  "accessToken": "소셜_액세스_토큰"
+  "deviceId": "임의로_생성한_기기_식별자"
 }
 
 ### 토큰 갱신

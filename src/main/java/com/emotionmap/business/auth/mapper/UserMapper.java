@@ -9,10 +9,7 @@ import java.time.LocalDateTime;
 @Mapper
 public interface UserMapper {
 
-    UserVo findByProviderAndProviderUserId(
-            @Param("provider") String provider,
-            @Param("providerUserId") String providerUserId
-    );
+    UserVo findByDeviceId(@Param("deviceId") String deviceId);
 
     UserVo findById(@Param("id") Long id);
 
@@ -25,6 +22,8 @@ public interface UserMapper {
     );
 
     void clearRefreshToken(@Param("id") Long id);
+
+    void updateLocation(@Param("id") Long id, @Param("locationId") Long locationId);
 
     void deleteById(@Param("id") Long id);
 

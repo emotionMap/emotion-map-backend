@@ -25,10 +25,10 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @Operation(summary = "로그인", description = "카카오/네이버/애플 로그인 API")
+    @Operation(summary = "로그인", description = "기기 식별자(deviceId) 기반 익명 로그인 - 본인인증 없음, 없는 deviceId면 새 계정 생성")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthLoginResponse>> login(@RequestBody AuthLoginRequest request) {
-        AuthLoginResponse response = authService.login(request.getProvider(), request.getAccessToken());
+        AuthLoginResponse response = authService.login(request.getDeviceId());
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 

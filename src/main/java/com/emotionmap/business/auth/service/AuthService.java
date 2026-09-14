@@ -3,7 +3,6 @@ package com.emotionmap.business.auth.service;
 import com.emotionmap.business.auth.mapper.UserMapper;
 import com.emotionmap.business.auth.payLoad.AuthLoginResponse;
 import com.emotionmap.business.auth.vo.JWTToken;
-import com.emotionmap.business.auth.vo.SocialUserInfoVo;
 import com.emotionmap.business.auth.vo.UserVo;
 import com.emotionmap.business.jwt.provider.JwtProvider;
 import com.emotionmap.common.code.ErrorCode;
@@ -20,31 +19,29 @@ import java.time.LocalDateTime;
 public class AuthService {
 
     private final UserMapper userMapper;
-    private final SocialAuthService socialAuthService;
     private final JwtProvider jwtProvider;
 
-    public AuthLoginResponse login(String provider, String socialAccessToken) {
+    public AuthLoginResponse login(String deviceId) {
 
-        // 1. 소셜 토큰 검증 + 사용자 정보 조회
-        SocialUserInfoVo socialUser =
-                socialAuthService.getUserInfo(provider, socialAccessToken);
-
-        // 2. 기존 유저 조회
-        UserVo user = userMapper
-                .findByProviderAndProviderUserId(provider, socialUser.getId());
-
-        // 3. 없으면 신규 생성
-        if (user == null) {
-            user = UserVo.newSocialUser(provider, socialUser.getId());
-            userMapper.insertUserInfo(user);
-            log.info("[Auth] 신규 유저 생성 - provider: {}, providerUserId: {}", provider, socialUser.getId());
+        if (deviceId == null || deviceId.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_LOGIN_REQUEST);
         }
 
-        // 4. JWT 발급 + RT DB 저장
-        JWTToken token = issueAndSaveTokens(user);
-        log.info("[Auth] 로그인 성공 - userId: {}, status: {}", user.getId(), user.getStatus());
+        // 1. 기존 유저 조회
+        UserVo user = userMapper.findByDeviceId(deviceId);
 
-        return new AuthLoginResponse(user.getStatus(), token);
+        // 2. 없으면 신규(익명) 생성
+        if (user == null) {
+            user = UserVo.newAnonymousUser(deviceId);
+            userMapper.insertUserInfo(user);
+            log.info("[Auth] 신규 익명 유저 생성 - deviceId: {}", deviceId);
+        }
+
+        // 3. JWT 발급 + RT DB 저장
+        JWTToken token = issueAndSaveTokens(user);
+        log.info("[Auth] 로그인 성공 - userId: {}", user.getId());
+
+        return new AuthLoginResponse(user.hasLocation(), token);
     }
 
     public JWTToken refresh(String refreshToken) {

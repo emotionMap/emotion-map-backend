@@ -12,34 +12,20 @@ import java.time.LocalDateTime;
 public class UserVo {
 
     private Long id;
-    private String provider;
-    private String providerUserId;
-    private String nickname;
-    private String bio;
-    private String profileImageUrl;
-    private UserStatusVo status;
+    private String deviceId;
     private LocalDateTime createdAt;
     private String refreshToken;
     private LocalDateTime refreshTokenExpiresAt;
     private Long locationId;
-    private String siDo;
-    private String siGunGu;
 
-    public static UserVo newSocialUser(String provider, String providerUserId) {
+    public static UserVo newAnonymousUser(String deviceId) {
         UserVo user = new UserVo();
-        user.setProvider(provider);
-        user.setProviderUserId(providerUserId);
-        user.setStatus(UserStatusVo.UNREGISTERED);
+        user.setDeviceId(deviceId);
         return user;
     }
 
-    // 상태 체크
-    public boolean isActive() {
-        return this.status == UserStatusVo.REGISTERED;
-    }
-    // 활성상태로 변경
-    public void activate() {
-        this.status = UserStatusVo.REGISTERED;
+    public boolean hasLocation() {
+        return this.locationId != null;
     }
 
 }

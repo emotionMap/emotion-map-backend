@@ -26,7 +26,7 @@ public class JwtProvider {
     public String createAccessToken(UserVo user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
-        claims.put("status", user.getStatus().name());
+        claims.put("locationSet", user.hasLocation());
 
         Date now = new Date();
         Date expiry = new Date(now.getTime() + accessTokenExpireMs);

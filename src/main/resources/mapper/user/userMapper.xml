@@ -2,56 +2,35 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.emotionmap.business.auth.mapper.UserMapper">
 
-    <select id="findByProviderAndProviderUserId" resultType="UserVo">
+    <select id="findByDeviceId" resultType="UserVo">
         SELECT u.id,
-               u.provider,
-               u.provider_user_id,
-               u.nickname,
-               u.bio,
-               u.profile_image_url,
-               u.status,
+               u.device_id,
                u.refresh_token,
                u.refresh_token_expires_at,
                u.last_login_at,
                u.created_at,
                u.updated_at,
-               u.location_id,
-               l.si_do,
-               l.si_gun_gu
+               u.location_id
         FROM users u
-        LEFT JOIN locations l ON l.id = u.location_id
-        WHERE u.provider = #{provider}
-          AND u.provider_user_id = #{providerUserId}
+        WHERE u.device_id = #{deviceId}
     </select>
 
     <select id="findById" resultType="UserVo">
         SELECT u.id,
-               u.provider,
-               u.provider_user_id,
-               u.nickname,
-               u.bio,
-               u.profile_image_url,
-               u.status,
+               u.device_id,
                u.refresh_token,
                u.refresh_token_expires_at,
                u.last_login_at,
                u.created_at,
                u.updated_at,
-               u.location_id,
-               l.si_do,
-               l.si_gun_gu
+               u.location_id
         FROM users u
-        LEFT JOIN locations l ON l.id = u.location_id
         WHERE u.id = #{id}
     </select>
 
     <insert id="insertUserInfo" parameterType="UserVo" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO users (provider,
-                           provider_user_id,
-                           status)
-        VALUES (#{provider},
-                #{providerUserId},
-                #{status})
+        INSERT INTO users (device_id)
+        VALUES (#{deviceId})
     </insert>
 
     <update id="updateRefreshToken">
@@ -65,6 +44,12 @@
         UPDATE users
         SET refresh_token            = NULL,
             refresh_token_expires_at = NULL
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateLocation">
+        UPDATE users
+        SET location_id = #{locationId}
         WHERE id = #{id}
     </update>
 
