@@ -2,7 +2,7 @@
 -- 적용 대상: 로컬 개발 DB (emotionMap)
 
 -- 1. 댓글 전용 테이블 생성 (자기참조로 무제한 중첩)
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS comments (
     id                BIGINT NOT NULL AUTO_INCREMENT,
     post_id           BIGINT NOT NULL,
     parent_comment_id BIGINT NULL,

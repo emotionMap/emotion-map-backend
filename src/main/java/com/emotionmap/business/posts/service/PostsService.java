@@ -1,7 +1,5 @@
 package com.emotionmap.business.posts.service;
 
-import com.emotionmap.business.auth.mapper.UserMapper;
-import com.emotionmap.business.auth.vo.UserVo;
 import com.emotionmap.business.comments.payload.CommentResponse;
 import com.emotionmap.business.comments.service.CommentsService;
 import com.emotionmap.business.posts.mapper.PostsMapper;
@@ -25,17 +23,11 @@ import java.util.stream.Collectors;
 public class PostsService {
 
     private final PostsMapper postsMapper;
-    private final UserMapper userMapper;
     private final AnonymousNicknameService anonymousNicknameService;
     private final CommentsService commentsService;
 
-    /**포스트 리스트 조회 - 메인 피드 (overrideLocationId 없으면 내 계정 위치, 있으면 그 지역 - 지도에서 지역 선택 시 사용)*/
-    public List<PostListResponse> getPostList(int page, int size, Long userId, Long filterUserId, Long overrideLocationId) {
-        Long locationId = overrideLocationId;
-        if (locationId == null) {
-            UserVo user = userMapper.findById(userId);
-            locationId = user != null ? user.getLocationId() : null;
-        }
+    /**포스트 리스트 조회 - 메인 피드 (locationId 없으면 전체 피드, 있으면 그 지역만 - 지도에서 지역 선택 시 사용)*/
+    public List<PostListResponse> getPostList(int page, int size, Long userId, Long filterUserId, Long locationId) {
         return fetchPosts(page, size, userId, filterUserId, locationId);
     }
 

@@ -28,7 +28,7 @@ public class PostsController {
     private final PostsService postService;
 
 
-    @Operation(summary = "포스트 리스트 조회", description = "locationId 생략 시 내 계정 위치, 지정 시 그 지역으로 조회 (지도에서 지역 선택 시 사용)")
+    @Operation(summary = "포스트 리스트 조회", description = "locationId 생략 시 전체 피드, 지정 시 그 지역으로 필터링 (지도에서 지역 선택 시 사용)")
     @GetMapping
     public ResponseEntity<ApiResponse<List<PostListResponse>>> getPostList(@AuthenticationPrincipal JwtUser jwtUser
             , @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int size
