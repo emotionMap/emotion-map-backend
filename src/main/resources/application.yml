@@ -3,6 +3,9 @@ spring:
     name: emotion_app
   profiles:
     active: local
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 5
 
 logging:
   level:
