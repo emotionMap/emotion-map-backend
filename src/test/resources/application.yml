@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  flyway:
+    enabled: false
+
+jwt:
+  secret: test-only-secret-key-do-not-use-in-production-0000
+
+aws:
+  access-key: test-access-key
+  secret-key: test-secret-key
+  bucket: test-bucket
+
+mybatis:
+  mapper-locations: classpath:/mapper/**/*.xml
+  type-aliases-package: com.emotionmap.business
+  configuration:
+    map-underscore-to-camel-case: true
