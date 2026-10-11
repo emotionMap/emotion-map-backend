@@ -89,6 +89,11 @@
         SELECT user_id FROM posts WHERE id = #{postId}
     </select>
 
+    <!-- 댓글 작성 전 게시글이 존재하고 삭제되지 않았는지 확인 -->
+    <select id="existsActivePost" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM posts WHERE id = #{postId} AND status = 'ACTIVE'
+    </select>
+
     <!-- 포스트 수정 -->
     <update id="updatePost">
         UPDATE posts

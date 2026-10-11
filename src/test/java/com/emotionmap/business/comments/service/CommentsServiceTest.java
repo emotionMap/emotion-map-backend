@@ -5,6 +5,7 @@ import com.emotionmap.business.comments.payload.CommentCreateRequest;
 import com.emotionmap.business.comments.payload.CommentResponse;
 import com.emotionmap.business.comments.payload.CommentUpdateRequest;
 import com.emotionmap.business.comments.vo.CommentRow;
+import com.emotionmap.business.posts.mapper.PostsMapper;
 import com.emotionmap.business.posts.payload.Status;
 import com.emotionmap.business.posts.service.AnonymousNicknameService;
 import com.emotionmap.common.code.ErrorCode;
@@ -27,6 +28,8 @@ class CommentsServiceTest {
     @Mock
     private CommentsMapper commentsMapper;
     @Mock
+    private PostsMapper postsMapper;
+    @Mock
     private AnonymousNicknameService anonymousNicknameService;
 
     @InjectMocks
@@ -46,10 +49,25 @@ class CommentsServiceTest {
     }
 
     @Test
+    void create_게시글이_존재하지_않거나_삭제됐으면_POST_NOT_FOUND() {
+        CommentCreateRequest request = new CommentCreateRequest();
+        request.setContent("댓글");
+        when(postsMapper.existsActivePost(1L)).thenReturn(false);
+
+        assertThatThrownBy(() -> commentsService.create(1L, request, 1L))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.POST_NOT_FOUND);
+
+        verify(commentsMapper, never()).insertComment(any());
+    }
+
+    @Test
     void create_parentCommentId가_다른_게시글_소속이면_COMMENT_NOT_FOUND() {
         CommentCreateRequest request = new CommentCreateRequest();
         request.setContent("대댓글");
         request.setParentCommentId(5L);
+        when(postsMapper.existsActivePost(1L)).thenReturn(true);
         when(commentsMapper.selectCommentPostId(5L)).thenReturn(999L); // 요청한 postId(1L)와 다름
 
         assertThatThrownBy(() -> commentsService.create(1L, request, 1L))
@@ -64,6 +82,7 @@ class CommentsServiceTest {
     void create_최상위_댓글이면_postId_기준으로_닉네임을_배정한다() {
         CommentCreateRequest request = new CommentCreateRequest();
         request.setContent("댓글");
+        when(postsMapper.existsActivePost(1L)).thenReturn(true);
         doAnswer(inv -> {
             request.setCommentId(42L);
             return null;

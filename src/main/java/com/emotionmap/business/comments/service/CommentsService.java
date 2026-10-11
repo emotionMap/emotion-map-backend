@@ -5,6 +5,8 @@ import com.emotionmap.business.comments.payload.CommentCreateRequest;
 import com.emotionmap.business.comments.payload.CommentResponse;
 import com.emotionmap.business.comments.payload.CommentUpdateRequest;
 import com.emotionmap.business.comments.vo.CommentRow;
+import com.emotionmap.business.notification.service.NotificationService;
+import com.emotionmap.business.posts.mapper.PostsMapper;
 import com.emotionmap.business.posts.service.AnonymousNicknameService;
 import com.emotionmap.common.code.ErrorCode;
 import com.emotionmap.common.exception.BusinessException;
@@ -25,13 +27,18 @@ import java.util.Map;
 public class CommentsService {
 
     private final CommentsMapper commentsMapper;
+    private final PostsMapper postsMapper;
     private final AnonymousNicknameService anonymousNicknameService;
+    private final NotificationService notificationService;
 
     /**댓글/대댓글 작성 (무제한 중첩) - parentCommentId가 없으면 게시글에 바로 다는 최상위 댓글*/
     @Transactional
     public Long create(Long postId, CommentCreateRequest request, Long userId) {
         if (request.getContent() == null || request.getContent().isBlank()) {
             throw new BusinessException(ErrorCode.INVALID_COMMENT_REQUEST);
+        }
+        if (!postsMapper.existsActivePost(postId)) {
+            throw new BusinessException(ErrorCode.POST_NOT_FOUND);
         }
 
         Long parentCommentId = request.getParentCommentId();
@@ -47,7 +54,12 @@ public class CommentsService {
         commentsMapper.insertComment(request);
 
         // 게시글 자체든 몇 단계 대댓글이든, 이 게시글 안에서는 항상 같은 닉네임
-        anonymousNicknameService.getOrCreateNickname(postId, userId);
+        String nickname = anonymousNicknameService.getOrCreateNickname(postId, userId);
+        try {
+            notificationService.notifyCommentCreated(postId, request.getCommentId(), parentCommentId, userId, nickname);
+        } catch (Exception e) {
+            log.warn("[Comments] 알림 발송 실패 (댓글 작성에는 영향 없음)", e);
+        }
 
         return request.getCommentId();
     }

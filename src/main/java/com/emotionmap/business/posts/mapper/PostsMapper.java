@@ -25,6 +25,7 @@ public interface PostsMapper {
 
     // 포스트 수정
     Long selectPostUserId(Long postId);
+    boolean existsActivePost(Long postId);
     void updatePost(PostUpdateRequest request);
     void deletePostEmotionTags(Long postId);
 

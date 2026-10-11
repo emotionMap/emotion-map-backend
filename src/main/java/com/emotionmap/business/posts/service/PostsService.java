@@ -2,6 +2,7 @@ package com.emotionmap.business.posts.service;
 
 import com.emotionmap.business.comments.payload.CommentResponse;
 import com.emotionmap.business.comments.service.CommentsService;
+import com.emotionmap.business.notification.service.NotificationService;
 import com.emotionmap.business.posts.mapper.PostsMapper;
 import com.emotionmap.business.posts.payload.*;
 import com.emotionmap.common.code.ErrorCode;
@@ -25,6 +26,7 @@ public class PostsService {
     private final PostsMapper postsMapper;
     private final AnonymousNicknameService anonymousNicknameService;
     private final CommentsService commentsService;
+    private final NotificationService notificationService;
 
     /**포스트 리스트 조회 - 메인 피드 (locationId 없으면 전체 피드, 있으면 그 지역만 - 지도에서 지역 선택 시 사용)*/
     public List<PostListResponse> getPostList(int page, int size, Long userId, Long filterUserId, Long locationId) {
@@ -124,6 +126,7 @@ public class PostsService {
     }
 
     /**좋아요 토글*/
+    @Transactional
     public String toggleLike(Long postId, Long userId) {
         Long ownerId = postsMapper.selectPostUserId(postId);
         if (ownerId == null) {
@@ -131,10 +134,21 @@ public class PostsService {
         }
         if (postsMapper.existsLike(postId, userId)) {
             postsMapper.deleteLike(postId, userId);
+            safelyNotify(() -> notificationService.cancelLikeNotification(postId, ownerId));
             return "N";
         } else {
             postsMapper.insertLike(postId, userId);
+            safelyNotify(() -> notificationService.notifyLike(postId, userId, ownerId));
             return "Y";
+        }
+    }
+
+    /** 알림 발송 실패가 좋아요/댓글 같은 핵심 동작을 롤백시키지 않도록 격리 */
+    private void safelyNotify(Runnable notify) {
+        try {
+            notify.run();
+        } catch (Exception e) {
+            log.warn("[Posts] 알림 발송 실패 (핵심 동작에는 영향 없음)", e);
         }
     }
 

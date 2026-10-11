@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.emotionmap.business.notification.mapper.NotificationMapper">
+
+    <!-- 알림 생성 -->
+    <insert id="insertNotification">
+        INSERT INTO notifications (user_id, type, post_id, comment_id, message)
+        VALUES (#{userId}, #{type}, #{postId}, #{commentId}, #{message})
+    </insert>
+
+    <!-- 좋아요 알림 원자적 upsert - like_dedup_key 유니크 제약이 동시 요청의 중복 생성을 막아준다 -->
+    <insert id="upsertLikeNotification">
+        INSERT INTO notifications (user_id, type, post_id, message, like_dedup_key)
+        VALUES (#{userId}, 'LIKE', #{postId}, #{message}, CONCAT(#{postId}, '_', #{userId}))
+        ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP
+    </insert>
+
+    <!-- 이 게시글에 남아있는 좋아요가 하나라도 있는지 -->
+    <select id="existsAnyLike" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM post_likes WHERE post_id = #{postId}
+    </select>
+
+    <!-- 안읽은 LIKE 알림 삭제 (호출 전에 좋아요가 하나도 안 남았는지는 서비스에서 확인) -->
+    <delete id="deleteUnreadLikeNotification">
+        DELETE FROM notifications
+        WHERE user_id = #{userId} AND post_id = #{postId} AND type = 'LIKE' AND is_read = FALSE
+    </delete>
+
+    <!-- 안읽은 알림 개수 (뱃지 활성/비활성 판단용) -->
+    <select id="countUnread" resultType="int">
+        SELECT COUNT(*) FROM notifications WHERE user_id = #{userId} AND is_read = FALSE
+    </select>
+
+    <!-- 알림 목록 (최신순) -->
+    <select id="getNotifications" resultType="NotificationResponse">
+        SELECT
+            id AS notification_id,
+            type,
+            post_id,
+            comment_id,
+            message,
+            is_read,
+            created_at
+        FROM notifications
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT #{size}
+        OFFSET #{offset}
+    </select>
+
+    <!-- 전체 읽음 처리 - like_dedup_key도 비워서 다음 좋아요 때 새 알림을 또 만들 수 있게 한다 -->
+    <update id="markAllRead">
+        UPDATE notifications SET is_read = TRUE, like_dedup_key = NULL WHERE user_id = #{userId} AND is_read = FALSE
+    </update>
+
+</mapper>
