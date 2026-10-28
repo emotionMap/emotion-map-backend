@@ -44,4 +44,9 @@ public class UserService {
         // 위치 설정 완료 상태(locationSet=true)가 반영된 새 토큰을 즉시 발급
         return authService.issueAndSaveTokens(user);
     }
+
+    /** FCM 디바이스 토큰 등록/갱신 - 로그인 직후 및 onTokenRefresh 발생 시 호출 */
+    public void updateFcmToken(Long userId, String fcmToken) {
+        userMapper.updateFcmToken(userId, fcmToken);
+    }
 }

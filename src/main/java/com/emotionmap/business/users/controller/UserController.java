@@ -2,6 +2,7 @@ package com.emotionmap.business.users.controller;
 
 import com.emotionmap.business.auth.vo.JWTToken;
 import com.emotionmap.business.jwt.vo.JwtUser;
+import com.emotionmap.business.users.payload.FcmTokenUpdateRequest;
 import com.emotionmap.business.users.payload.LocationUpdateRequest;
 import com.emotionmap.business.users.service.UserService;
 import com.emotionmap.common.payload.ApiResponse;
@@ -31,6 +32,15 @@ public class UserController {
             @RequestBody LocationUpdateRequest request) {
         JWTToken token = userService.setLocation(jwtUser.getUserId(), request.getLocationId());
         return ResponseEntity.ok(ApiResponse.of(token));
+    }
+
+    @Operation(summary = "FCM 디바이스 토큰 등록/갱신", description = "로그인 직후 및 토큰 갱신(onTokenRefresh) 발생 시 호출")
+    @PatchMapping("/me/fcm-token")
+    public ResponseEntity<ApiResponse<Void>> updateFcmToken(
+            @AuthenticationPrincipal JwtUser jwtUser,
+            @RequestBody FcmTokenUpdateRequest request) {
+        userService.updateFcmToken(jwtUser.getUserId(), request.getFcmToken());
+        return ResponseEntity.ok(ApiResponse.of(null));
     }
 
     // 프앤 전달

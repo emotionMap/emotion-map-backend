@@ -28,4 +28,10 @@ public interface UserMapper {
     void deleteById(@Param("id") Long id);
 
     void dataClean();
+
+    void updateFcmToken(@Param("id") Long id, @Param("fcmToken") String fcmToken);
+
+    String findFcmToken(@Param("id") Long id);
+
+    void clearFcmToken(@Param("id") Long id);
 }

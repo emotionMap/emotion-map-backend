@@ -62,4 +62,21 @@
         DELETE FROM users where 1=1
     </delete>
 
+    <!-- FCM 디바이스 토큰 등록/갱신 (로그인 직후 + onTokenRefresh) -->
+    <update id="updateFcmToken">
+        UPDATE users
+        SET fcm_token = #{fcmToken}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 푸시 발송용 토큰 조회 -->
+    <select id="findFcmToken" resultType="String">
+        SELECT fcm_token FROM users WHERE id = #{id}
+    </select>
+
+    <!-- FCM이 "토큰 무효" 응답 시 정리 -->
+    <update id="clearFcmToken">
+        UPDATE users SET fcm_token = NULL WHERE id = #{id}
+    </update>
+
 </mapper>

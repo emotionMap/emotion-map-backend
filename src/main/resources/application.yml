@@ -20,3 +20,8 @@ mybatis:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     map-underscore-to-camel-case: true
+
+fcm:
+  # FCM 서비스 계정 키(JSON) 절대경로. 프로필별 yml에서 실제 값을 채운다.
+  # 비어있거나 파일이 없으면 FirebaseConfig가 초기화를 건너뛰고 푸시 발송만 비활성화된다 (앱 기동에는 영향 없음).
+  credentials-path: ${FCM_CREDENTIALS_PATH:}

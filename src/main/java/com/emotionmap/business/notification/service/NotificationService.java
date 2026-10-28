@@ -1,11 +1,13 @@
 package com.emotionmap.business.notification.service;
 
 import com.emotionmap.business.comments.mapper.CommentsMapper;
+import com.emotionmap.business.notification.event.NotificationCreatedEvent;
 import com.emotionmap.business.notification.mapper.NotificationMapper;
 import com.emotionmap.business.notification.payload.NotificationResponse;
 import com.emotionmap.business.posts.mapper.PostsMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,7 @@ public class NotificationService {
     private final NotificationMapper notificationMapper;
     private final PostsMapper postsMapper;
     private final CommentsMapper commentsMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 좋아요 추가 - 자기 글이면 알림 없음.
@@ -33,6 +36,7 @@ public class NotificationService {
             return;
         }
         notificationMapper.upsertLikeNotification(postOwnerId, postId, LIKE_MESSAGE);
+        eventPublisher.publishEvent(new NotificationCreatedEvent(postOwnerId, "LIKE", LIKE_MESSAGE, postId, null));
     }
 
     /**
@@ -60,6 +64,7 @@ public class NotificationService {
             }
             String message = actorNickname + "님이 회원님의 감정에 댓글을 남겼어요";
             notificationMapper.insertNotification(postOwnerId, "COMMENT", postId, commentId, message);
+            eventPublisher.publishEvent(new NotificationCreatedEvent(postOwnerId, "COMMENT", message, postId, commentId));
         } else {
             Long parentOwnerId = commentsMapper.selectCommentUserId(parentCommentId);
             if (parentOwnerId == null || actorUserId.equals(parentOwnerId)) {
@@ -67,6 +72,7 @@ public class NotificationService {
             }
             String message = actorNickname + "님이 회원님의 댓글에 답글을 남겼어요";
             notificationMapper.insertNotification(parentOwnerId, "REPLY", postId, commentId, message);
+            eventPublisher.publishEvent(new NotificationCreatedEvent(parentOwnerId, "REPLY", message, postId, commentId));
         }
     }
 
