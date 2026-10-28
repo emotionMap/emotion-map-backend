@@ -58,16 +58,22 @@ com.emotionmap
 │   │   ├── controller/    # LocationController → /location  ← 서비스 없이 mapper 직접 호출
 │   │   ├── mapper/        # LocationMapper
 │   │   └── payload/       # SigunguResponse
-│   ├── users/             # 사용자 관리 (가입 시 위치 설정 + 탈퇴)
+│   ├── users/             # 사용자 관리 (가입 시 위치 설정 + 탈퇴 + FCM 토큰 등록)
 │   │   ├── controller/    # UserController → /users
-│   │   ├── payload/       # LocationUpdateRequest
+│   │   ├── payload/       # LocationUpdateRequest, FcmTokenUpdateRequest
 │   │   └── service/       # UserService
-│   └── map/               # 지역별 지도 요약 (순수 조회/집계, 스키마 변경 없음)
-│       ├── controller/    # MapController → /map
-│       ├── mapper/        # MapMapper (윈도우 함수로 지역별 최근 5개 조회)
-│       ├── payload/       # MapRegionResponse
-│       ├── service/       # MapService (평면 조회 → Java에서 지역별 그룹핑)
-│       └── vo/            # MapEmotionRow
+│   ├── map/               # 지역별 지도 요약 (순수 조회/집계, 스키마 변경 없음)
+│   │   ├── controller/    # MapController → /map
+│   │   ├── mapper/        # MapMapper (윈도우 함수로 지역별 최근 5개 조회)
+│   │   ├── payload/       # MapRegionResponse
+│   │   ├── service/       # MapService (평면 조회 → Java에서 지역별 그룹핑)
+│   │   └── vo/            # MapEmotionRow
+│   └── notification/      # 좋아요/댓글/대댓글 알림 + FCM 푸시 발송
+│       ├── controller/    # NotificationController → /notifications
+│       ├── mapper/        # NotificationMapper
+│       ├── payload/       # NotificationResponse, NotificationType
+│       ├── event/         # NotificationCreatedEvent (알림 insert 직후 발행)
+│       └── service/       # NotificationService(알림 생성/조회), PushNotificationService(FCM 발송 - @TransactionalEventListener(AFTER_COMMIT) + @Async로 비동기 수신, FCM 자격증명 없으면 조용히 스킵)
 ├── common/
 │   ├── config/        # SecurityConfig, S3Config, SwaggerConfig
 │   ├── code/          # ErrorCode enum
@@ -100,6 +106,10 @@ com.emotionmap
 | GET | /emotion | 감정 태그 목록 | 필요 |
 | GET | /location/sido | 시/도 목록 | 불필요 |
 | GET | /location/sigungu?siDo= | 시/군/구 목록 | 불필요 |
+| GET | /notifications/unread-count | 안읽은 알림 개수 (피드 상단 뱃지용) | 필요 |
+| GET | /notifications | 알림 목록 (좋아요/댓글/대댓글) | 필요 |
+| PATCH | /notifications/read-all | 전체 읽음 처리 (뱃지 비활성화) | 필요 |
+| PATCH | /users/me/fcm-token | FCM 디바이스 토큰 등록/갱신 (로그인 직후, onTokenRefresh 시 호출) | 필요 |
 
 ### Request lifecycle
 
@@ -144,6 +154,8 @@ com.emotionmap
 - **익명 닉네임 (완전 익명 게시판)**: 프로필/타 사용자 조회 개념이 없다. 게시글이든 그 아래 몇 단계 대댓글이든, 작성 시 `AnonymousNicknameService`가 **게시글(postId) 단위**로 닉네임을 자동 배정해 `post_anonymous_nickname`에 저장한다. **같은 게시글 안에서는 같은 유저 = 항상 같은 닉네임**, **다른 게시글에서는 같은 유저라도 다른 닉네임**이 나온다. 응답에는 `userId`/`profileImageUrl`을 내려주지 않는다 (계정 식별자가 노출되면 게시글 간 익명성이 클라이언트에서 깨질 수 있음).
 - **권한 검사**: 게시글/댓글 수정·삭제 시 각각 `posts.user_id`/`comments.user_id`와 요청자 userId 비교. 불일치 시 `FORBIDDEN`.
 - **회원 탈퇴**: `users` 레코드 완전 삭제 (ON DELETE CASCADE로 관련 데이터 자동 삭제).
+- **알림 생성 규칙**: 본인 글/본인 댓글에 본인이 반응하면 알림 생성 안 함. 대댓글은 깊이 상관없이 **바로 위 부모 댓글 작성자에게만** REPLY 알림(게시글 작성자에게 중복 발송 안 함). 좋아요는 `(user_id, post_id, type=LIKE)` 기준 유니크 제약 + `INSERT ... ON DUPLICATE KEY UPDATE`로 원자적 upsert (좋아요 반복 토글 시 중복 알림 안 쌓임, 읽음 처리 시 dedup 키 초기화).
+- **알림 발송과 핵심 트랜잭션 분리**: `NotificationService`가 알림 insert 후 `NotificationCreatedEvent`를 발행하고, `PushNotificationService`가 `@TransactionalEventListener(AFTER_COMMIT) + @Async`로 수신해 FCM 발송. FCM 발송 실패/자격증명 미설정이 알림 생성(핵심 동작) 자체에는 영향을 주지 않음.
 
 ### Common coding patterns
 
@@ -250,7 +262,7 @@ Available at `http://localhost:8080/swagger-ui/index.html` when running locally.
 
 ### Image
 - 게시글 첨부 이미지; S3 URL, 정렬 순서(sort_order) 보유
-- 추후 개발 예정
+- **MVP 범위에서 제외 확정** (2026-10-28). `post_images` 스키마/`Image` DTO는 남아있으나 실제 업로드 엔드포인트는 구현하지 않는다. `common/config/S3Config`와 `com.emotionmap.test.S3Service`/`TestController`는 업로드 플로우에 연결되지 않은 테스트용 코드다.
 
 ### Location
 - 게시글 1개에 위치 1개 연결 (locations 테이블)
@@ -262,3 +274,8 @@ Available at `http://localhost:8080/swagger-ui/index.html` when running locally.
 - `GET /map`으로 지역(시/군/구)별 요약을 제공한다: 지역마다 최근 부착된 감정 태그 최대 5개(게시글 단위 아님, 태그 부착 기록 단위). 게시글이 하나도 없는 지역은 제외된다.
 - 지역을 선택했을 때의 "그 지역 피드"는 별도 API가 아니라 `GET /posts?locationId=`로 기존 피드를 재사용한다.
 - DB 스키마 변경 없이 `posts`/`post_emotion_tag`/`locations`를 조합한 순수 조회 기능이다.
+
+### Notification
+- 좋아요/댓글/대댓글 발생 시 수신자에게 알림을 만든다 (`notifications` 테이블: user_id, type, post_id, comment_id(nullable), message, is_read, created_at).
+- 알림 문구는 백엔드가 완성 문자열로 조립해서 내려준다 (`NotificationService`). LIKE는 비개인화("누군가"), COMMENT/REPLY는 작성 시 배정된 게시글 단위 익명 닉네임을 사용한다.
+- FCM 디바이스 토큰은 `users.fcm_token`에 1계정 = 1토큰으로 저장된다(멀티 디바이스 미지원). 토큰이 없거나 FCM 자격증명(`fcm.credentials-path`)이 설정되지 않으면 푸시는 조용히 스킵되고 알림 생성 자체는 영향받지 않는다.
