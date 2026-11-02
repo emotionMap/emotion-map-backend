@@ -53,4 +53,9 @@
         UPDATE notifications SET is_read = TRUE, like_dedup_key = NULL WHERE user_id = #{userId} AND is_read = FALSE
     </update>
 
+    <!-- 개별 알림 읽음 처리 - user_id로 소유권 체크, 본인 알림이 아니면 조용히 0건 처리됨 -->
+    <update id="markRead">
+        UPDATE notifications SET is_read = TRUE, like_dedup_key = NULL WHERE id = #{id} AND user_id = #{userId}
+    </update>
+
 </mapper>

@@ -34,10 +34,18 @@ public class NotificationController {
         return ResponseEntity.ok(ApiResponse.of(notificationService.getNotifications(page, size, jwtUser.getUserId())));
     }
 
-    @Operation(summary = "전체 읽음 처리", description = "알림 목록 화면 진입 시 호출 - 알림 뱃지 비활성화")
+    @Operation(summary = "전체 읽음 처리")
     @PatchMapping("/read-all")
     public ResponseEntity<ApiResponse<Void>> readAll(@AuthenticationPrincipal JwtUser jwtUser) {
         notificationService.readAll(jwtUser.getUserId());
+        return ResponseEntity.ok(ApiResponse.of(null));
+    }
+
+    @Operation(summary = "개별 알림 읽음 처리", description = "알림 목록에서 항목을 탭했을 때 호출")
+    @PatchMapping("/{notificationId}/read")
+    public ResponseEntity<ApiResponse<Void>> markRead(@AuthenticationPrincipal JwtUser jwtUser,
+            @PathVariable Long notificationId) {
+        notificationService.markRead(notificationId, jwtUser.getUserId());
         return ResponseEntity.ok(ApiResponse.of(null));
     }
 }

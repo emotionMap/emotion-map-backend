@@ -32,4 +32,7 @@ public interface NotificationMapper {
 
     // 전체 읽음 처리
     void markAllRead(Long userId);
+
+    // 개별 알림 읽음 처리 (본인 알림만 - WHERE절에 소유권 체크 포함)
+    void markRead(@Param("id") Long id, @Param("userId") Long userId);
 }

@@ -87,9 +87,15 @@ public class NotificationService {
         return notificationMapper.getNotifications(userId, offset, size);
     }
 
-    /** 전체 읽음 처리 - 알림 목록 화면 진입 시 호출, 뱃지 비활성화 */
+    /** 전체 읽음 처리 */
     @Transactional
     public void readAll(Long userId) {
         notificationMapper.markAllRead(userId);
+    }
+
+    /** 개별 알림 읽음 처리 - 알림 목록에서 항목을 탭했을 때 호출 */
+    @Transactional
+    public void markRead(Long notificationId, Long userId) {
+        notificationMapper.markRead(notificationId, userId);
     }
 }
