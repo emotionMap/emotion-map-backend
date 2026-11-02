@@ -230,6 +230,8 @@ Available at `http://localhost:8080/swagger-ui/index.html` when running locally.
 4. **기존 결정이 변경된 경우**: 이전 메모리 파일을 지우지 않고 맨 위에 대체 표시(`대체됨 → 새 메모리 링크`)를 남기고, 새 메모리에서 이전 메모리를 링크한다.
 5. **사용자 확인이 필요한 사항**: 아직 확정되지 않은 내용은 memory에 사실로 적지 않고, 다음 세션에서 확인할 질문 형태로만 남긴다.
 
+**기록된 메모리 확인 방법**: 이 memory는 로컬 `~/.claude/projects/<이 프로젝트 경로의 해시>/memory/`에 쌓인다 (git에는 포함되지 않음, 머신/사용자별로 별도 생성됨 — 다른 PC에서는 새로 쌓인다). `MEMORY.md`가 전체 목록이고 각 항목이 상세 파일로 링크된다. 확인하려면 Claude에게 "메모리 확인해줘" 또는 "지금까지 기록된 메모리 보여줘"라고 요청하면 된다. (현재 이 머신 기준 경로: `C:\Users\tlsrl\.claude\projects\C--Users-tlsrl-intellliJ-emotion-app\memory\MEMORY.md`)
+
 ## 작업 제한 규칙
 
 - 요청 범위 밖의 파일은 수정하지 않는다.
