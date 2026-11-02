@@ -50,5 +50,15 @@ dependencies {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'integration'
+    }
+}
+
+// 로컬 개발 MySQL이 떠있어야 실행 가능 (application-local.yml 필요) - ./gradlew integrationTest
+tasks.register('integrationTest', Test) {
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+    shouldRunAfter test
 }
